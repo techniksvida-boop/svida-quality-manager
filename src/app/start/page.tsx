@@ -6,7 +6,6 @@ import { supabase } from "@/lib/supabase";
 
 export default function StartPage() {
   const router = useRouter();
-
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -18,61 +17,58 @@ export default function StartPage() {
     setError("");
 
     const { data } = await supabase
-      .from("evaluation_codes")
-      .select("id, employee_id, used")
-      .eq("code", code)
+      .from("voting_codes")
+      .select("id, code, is_active")
+      .eq("code", code.toUpperCase())
+      .eq("is_active", true)
       .single();
 
+    setLoading(false);
+
     if (!data) {
-      setError("Neplatný kód.");
-      setLoading(false);
+      setError("Zadaný kód nie je platný.");
       return;
     }
 
-    if (data.used) {
-      setError("Tento kód už bol použitý.");
-      setLoading(false);
-      return;
-    }
+    localStorage.setItem("voting_code_id", data.id);
+    localStorage.setItem("voting_code", data.code);
 
-    sessionStorage.setItem("evaluationCode", code);
-
-    router.push(`/employee/${data.employee_id}`);
+    router.push("/hodnotenie");
   }
 
   return (
-    <main className="max-w-md mx-auto mt-24">
-      <div className="rounded-xl border bg-white p-8 shadow">
-
-        <h1 className="text-3xl font-bold mb-3">
+    <main className="min-h-screen flex items-center justify-center bg-slate-100 p-6">
+      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
+        <h1 className="text-3xl font-bold text-center">
           Anonymné hodnotenie
         </h1>
 
-        <p className="text-gray-500 mb-8">
-          Zadajte svoj 4-miestny kód.
+        <p className="mt-3 text-center text-gray-500">
+          Zadajte svoj 4-miestny anonymný kód.
         </p>
 
-        <form onSubmit={verifyCode} className="space-y-5">
-
+        <form onSubmit={verifyCode} className="mt-8 space-y-5">
           <input
             value={code}
-            onChange={(e) => setCode(e.target.value)}
+            onChange={(e) => setCode(e.target.value.toUpperCase())}
             maxLength={4}
-            className="w-full border rounded-lg p-4 text-center text-2xl tracking-widest"
-            placeholder="1234"
+            className="w-full rounded-xl border p-4 text-center text-2xl tracking-[8px] uppercase"
+            placeholder="AB12"
           />
 
           {error && (
-            <p className="text-red-600">{error}</p>
+            <p className="text-center text-red-600">
+              {error}
+            </p>
           )}
 
           <button
-            disabled={loading}
-            className="w-full rounded-lg bg-blue-600 text-white py-3"
+            type="submit"
+            disabled={loading || code.length !== 4}
+            className="w-full rounded-xl bg-blue-600 py-4 font-semibold text-white disabled:opacity-50"
           >
             {loading ? "Overujem..." : "Pokračovať"}
           </button>
-
         </form>
       </div>
     </main>
