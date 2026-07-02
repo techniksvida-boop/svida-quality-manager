@@ -18,6 +18,27 @@ export default function EvaluationForm({
   async function handleSubmit(formData: FormData) {
     setLoading(true);
 
+    const votingCodeId = localStorage.getItem("voting_code");
+
+    if (!votingCodeId) {
+      alert("Najprv zadajte anonymný hlasovací kód.");
+      setLoading(false);
+      return;
+    }
+
+    const { data: alreadyUsed } = await supabase
+      .from("voting_code_usage")
+      .select("id")
+      .eq("voting_code_id", votingCodeId)
+      .eq("evaluated_employee_id", employeeId)
+      .maybeSingle();
+
+    if (alreadyUsed) {
+      alert("Tohto zamestnanca ste už hodnotili.");
+      setLoading(false);
+      return;
+    }
+
     const { data: evaluation, error } = await supabase
       .from("evaluations")
       .insert({
@@ -30,8 +51,8 @@ export default function EvaluationForm({
       .select()
       .single();
 
-    if (error) {
-      alert(error.message);
+    if (error || !evaluation) {
+      alert(error?.message || "Hodnotenie sa nepodarilo uložiť.");
       setLoading(false);
       return;
     }
@@ -53,6 +74,12 @@ export default function EvaluationForm({
         comment_text: comment,
       });
     }
+
+    await supabase.from("voting_code_usage").insert({
+      voting_code_id: votingCodeId,
+      evaluated_employee_id: employeeId,
+      evaluation_id: evaluation.id,
+    });
 
     setSent(true);
     setLoading(false);
