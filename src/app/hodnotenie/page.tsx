@@ -42,8 +42,16 @@ export default function HodnoteniePage() {
   }
 
   return (
-    <main className="max-w-5xl mx-auto p-8">
-      <h1 className="text-4xl font-bold">Anonymné hodnotenie</h1>
+  <main className="max-w-5xl mx-auto p-8">
+    <div className="mb-8 flex justify-center">
+      <img
+        src="/logo-svida.jpg"
+        alt="Senior dom Svida"
+        className="h-24 w-auto"
+      />
+    </div>
+
+    <h1 className="text-4xl font-bold">Anonymné hodnotenie</h1>
       <p className="mt-2 text-gray-500">
         Vyberte pracovníka sociálneho úseku, ktorého chcete hodnotiť.
       </p>
