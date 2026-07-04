@@ -194,6 +194,26 @@ export default function EvaluationForm({
           Textové odpovede na konci formulára sú nepovinné.
         </p>
       </div>
+            <div className="rounded-xl border border-green-200 bg-green-50 p-6">
+        <h2 className="text-xl font-semibold text-green-800 mb-3">
+          Anonymita hodnotenia
+        </h2>
+
+        <div className="space-y-2 text-green-800">
+          <p>
+            Hodnotenie je anonymné. V systéme sa neeviduje meno hodnotiacej osoby.
+          </p>
+
+          <p>
+            Anonymný kód slúži iba na overenie prístupu a na zabezpečenie toho,
+            aby jeden zamestnanec nehodnotil toho istého pracovníka opakovane.
+          </p>
+
+          <p>
+            Každý anonymný kód môže ohodnotiť konkrétneho zamestnanca iba raz.
+          </p>
+        </div>
+      </div>
 
       {questions.map((question) => (
         <div key={question.id} className="rounded-xl border p-6 bg-white">
