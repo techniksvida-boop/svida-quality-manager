@@ -128,3 +128,69 @@
     @apply font-sans;
   }
 }
+:root {
+  --svida-primary: #df4a33;
+  --svida-primary-dark: #b93a27;
+  --svida-primary-light: #fff1ed;
+  --svida-bg: #f7f3ef;
+  --svida-card: #ffffff;
+  --svida-border: #ead8cf;
+  --svida-text-muted: #6b7280;
+}
+
+.svida-page-bg {
+  background: linear-gradient(180deg, #f7f3ef 0%, #f9f7f4 100%);
+}
+
+.svida-card {
+  background: var(--svida-card);
+  border: 1px solid var(--svida-border);
+  box-shadow: 0 10px 30px rgba(120, 65, 45, 0.08);
+}
+
+.svida-logo-box {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.svida-btn {
+  background: var(--svida-primary);
+  color: #ffffff;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.svida-btn:hover {
+  background: var(--svida-primary-dark);
+}
+
+.svida-btn:active {
+  transform: scale(0.98);
+}
+
+.svida-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.svida-info-box {
+  background: var(--svida-primary-light);
+  border: 1px solid #f1c7ba;
+}
+
+.svida-info-title {
+  color: var(--svida-primary-dark);
+}
+
+.svida-anonymity-box {
+  background: #f7f5ec;
+  border: 1px solid #e3d8bd;
+}
+
+.svida-anonymity-title {
+  color: #6f4f1f;
+}
+
+.svida-anonymity-text {
+  color: #5f513a;
+}
