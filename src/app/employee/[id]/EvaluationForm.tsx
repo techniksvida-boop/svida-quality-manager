@@ -165,34 +165,27 @@ export default function EvaluationForm({
 
   return (
     <form action={handleSubmit} className="mt-10 space-y-6">
-      <div className="rounded-xl p-6 svida-info-box">
-        <h2 className="text-xl font-semibold mb-4 svida-info-title">
-          Ako hodnotiť
+            <div className="rounded-xl p-6 svida-anonymity-box">
+        <h2 className="text-2xl font-bold svida-anonymity-title mb-5">
+          Anonymita hodnotenia
         </h2>
 
-        <div className="space-y-2 text-gray-700">
+        <div className="space-y-4 text-lg leading-relaxed svida-anonymity-text">
           <p>
-            <strong>1</strong> = vôbec nesúhlasím
+            Hodnotenie je anonymné. V systéme sa neeviduje meno hodnotiacej
+            osoby.
           </p>
+
           <p>
-            <strong>2</strong> = skôr nesúhlasím
+            Anonymný kód slúži iba na overenie prístupu a na zabezpečenie toho,
+            aby jeden zamestnanec nehodnotil toho istého pracovníka opakovane.
           </p>
+
           <p>
-            <strong>3</strong> = neviem posúdiť / čiastočne
-          </p>
-          <p>
-            <strong>4</strong> = skôr súhlasím
-          </p>
-          <p>
-            <strong>5</strong> = úplne súhlasím
+            Každý anonymný kód môže ohodnotiť konkrétneho zamestnanca iba raz.
           </p>
         </div>
-
-        <p className="mt-5 text-sm text-gray-600">
-          Otázky označené červenou hviezdičkou{" "}
-          <span className="font-bold text-red-600">*</span> sú povinné.
-          Textové odpovede na konci formulára sú nepovinné.
-        </p>
+      </div>
       </div>
 
       <div className="rounded-xl p-6 svida-anonymity-box">
@@ -215,7 +208,7 @@ export default function EvaluationForm({
             Každý anonymný kód môže ohodnotiť konkrétneho zamestnanca iba raz.
           </p>
         </div>
-      </div>
+         </div>
 
       {questions.map((question) => (
         <div key={question.id} className="rounded-xl border p-6 bg-white">
