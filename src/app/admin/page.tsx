@@ -3,6 +3,13 @@ export const dynamic = "force-dynamic";
 import { supabase } from "@/lib/supabase";
 import PrintButton from "./PrintButton";
 
+type ScoreLevel = {
+  label: string;
+  cardClass: string;
+  valueClass: string;
+  badgeClass: string;
+};
+
 type Recommendation = {
   categoryName: string;
   average: number;
@@ -12,6 +19,15 @@ type Recommendation = {
   suggestedGoal: string;
   verificationMethod: string;
 };
+
+type CategoryStats = Record<
+  string,
+  {
+    total: number;
+    count: number;
+    average: number;
+  }
+>;
 
 function getPriority(average: number) {
   if (average <= 3) {
@@ -25,7 +41,7 @@ function getPriority(average: number) {
   return "Nízka priorita";
 }
 
-function getScoreLevel(score: number | null) {
+function getScoreLevel(score: number | null): ScoreLevel {
   if (score === null) {
     return {
       label: "Bez hodnotenia",
@@ -67,6 +83,14 @@ function getPositionName(employee: any) {
   }
 
   return employee.positions?.name || "";
+}
+
+function getCategoryName(question: any) {
+  if (Array.isArray(question.evaluation_categories)) {
+    return question.evaluation_categories[0]?.name || "Bez kategórie";
+  }
+
+  return question.evaluation_categories?.name || "Bez kategórie";
 }
 
 function getRecommendationByCategory(
@@ -203,16 +227,7 @@ function getRecommendationByCategory(
   };
 }
 
-function createTrainingRecommendations(
-  categoryStats: Record<
-    string,
-    {
-      total: number;
-      count: number;
-      average: number;
-    }
-  >
-) {
+function createTrainingRecommendations(categoryStats: CategoryStats) {
   return Object.entries(categoryStats)
     .map(([categoryName, stats]) =>
       getRecommendationByCategory(categoryName, stats.average)
@@ -220,10 +235,6 @@ function createTrainingRecommendations(
     .filter((recommendation) => recommendation.average < 4.1)
     .sort((a, b) => a.average - b.average)
     .slice(0, 2);
-}
-
-function getCommentsByType(comments: any[], type: string) {
-  return comments.filter((comment) => comment.comment_type === type);
 }
 
 function getCategorySummary(
@@ -408,7 +419,7 @@ export default async function AdminPage() {
   (questions || []).forEach((question: any) => {
     questionMap.set(question.id, {
       question: question.question,
-      category: question.evaluation_categories?.name || "Bez kategórie",
+      category: getCategoryName(question),
     });
   });
 
@@ -434,14 +445,7 @@ export default async function AdminPage() {
         ? scores.reduce((sum, score) => sum + score, 0) / scores.length
         : null;
 
-    const categoryStats: Record<
-      string,
-      {
-        total: number;
-        count: number;
-        average: number;
-      }
-    > = {};
+    const categoryStats: CategoryStats = {};
 
     employeeAnswers.forEach((answer: any) => {
       const questionInfo = questionMap.get(answer.question_id);
@@ -491,18 +495,20 @@ export default async function AdminPage() {
     (employee: any) => employee.average !== null
   );
 
-  const overallScores = evaluatedEmployees
+  const overallScores: number[] = evaluatedEmployees
     .map((employee: any) => employee.average)
-    .filter((average: number | null) => average !== null);
+    .filter((average: number | null): average is number => average !== null);
 
   const overallAverage =
     overallScores.length > 0
-      ? overallScores.reduce((sum: number, score: number) => sum + score, 0) /
+      ? overallScores.reduce((sum, score) => sum + score, 0) /
         overallScores.length
       : null;
 
   const categorySummary = getCategorySummary(employeesWithStats);
+
   const strongestCategories = categorySummary.slice(0, 3);
+
   const riskiestCategories = [...categorySummary]
     .sort((a, b) => a.average - b.average)
     .slice(0, 3);
@@ -523,25 +529,25 @@ export default async function AdminPage() {
   return (
     <main className="max-w-6xl mx-auto p-8">
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-  <div>
-    <h1 className="text-4xl font-bold">Manažérsky dashboard</h1>
+        <div>
+          <h1 className="text-4xl font-bold">Manažérsky dashboard</h1>
 
-    <p className="mt-3 text-gray-500">
-      Prehľad anonymného hodnotenia zamestnancov sociálneho úseku.
-    </p>
-  </div>
+          <p className="mt-3 text-gray-500">
+            Prehľad anonymného hodnotenia zamestnancov sociálneho úseku.
+          </p>
+        </div>
 
-  <a
-    href="/admin/print-report"
-    target="_blank"
-    rel="noopener noreferrer"
-    className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
-  >
-    Vytlačiť celkový manažérsky report
-  </a>
-</div>
+        <a
+          href="/admin/print-report"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+        >
+          Vytlačiť celkový manažérsky report
+        </a>
+      </div>
 
-      <div className="mt-8 grid md:grid-cols-4 gap-5">
+      <div className="mt-8 grid gap-5 md:grid-cols-4">
         <div className="rounded-2xl border bg-white p-6 shadow-sm">
           <p className="text-gray-500">Počet kódov</p>
           <p className="mt-2 text-3xl font-bold">{totalCodes || 0}</p>
@@ -561,19 +567,17 @@ export default async function AdminPage() {
 
         <div className="rounded-2xl border bg-white p-6 shadow-sm">
           <p className="text-gray-500">Sledovaní zamestnanci</p>
-          <p className="mt-2 text-3xl font-bold">
-            {employees?.length || 0}
-          </p>
+          <p className="mt-2 text-3xl font-bold">{employees?.length || 0}</p>
         </div>
       </div>
 
       <section className="mt-10">
-        <h2 className="text-2xl font-semibold mb-5">
+        <h2 className="mb-5 text-2xl font-semibold">
           Celkové výsledky hodnotenia
         </h2>
 
         <div className="rounded-2xl border bg-white p-6 shadow-sm">
-          <div className="grid md:grid-cols-3 gap-5">
+          <div className="grid gap-5 md:grid-cols-3">
             <div className={`rounded-xl border p-5 ${overallLevel.cardClass}`}>
               <p className="text-sm text-gray-600">
                 Celkový priemer hodnotenia
@@ -620,9 +624,9 @@ export default async function AdminPage() {
             </div>
           </div>
 
-          <div className="mt-8 grid lg:grid-cols-2 gap-6">
+          <div className="mt-8 grid gap-6 lg:grid-cols-2">
             <div>
-              <h3 className="text-lg font-semibold mb-4">
+              <h3 className="mb-4 text-lg font-semibold">
                 Poradie zamestnancov – najvyššie hodnotenie
               </h3>
 
@@ -674,7 +678,7 @@ export default async function AdminPage() {
             </div>
 
             <div>
-              <h3 className="text-lg font-semibold mb-4">
+              <h3 className="mb-4 text-lg font-semibold">
                 Poradie zamestnancov – najnižšie hodnotenie
               </h3>
 
@@ -726,9 +730,9 @@ export default async function AdminPage() {
             </div>
           </div>
 
-          <div className="mt-8 grid lg:grid-cols-2 gap-6">
+          <div className="mt-8 grid gap-6 lg:grid-cols-2">
             <div>
-              <h3 className="text-lg font-semibold mb-4">
+              <h3 className="mb-4 text-lg font-semibold">
                 Najsilnejšie oblasti
               </h3>
 
@@ -779,7 +783,7 @@ export default async function AdminPage() {
             </div>
 
             <div>
-              <h3 className="text-lg font-semibold mb-4">
+              <h3 className="mb-4 text-lg font-semibold">
                 Najrizikovejšie oblasti
               </h3>
 
@@ -831,12 +835,12 @@ export default async function AdminPage() {
           </div>
 
           <div className="mt-8">
-            <h3 className="text-lg font-semibold mb-4">
+            <h3 className="mb-4 text-lg font-semibold">
               Odporúčané vzdelávacie témy
             </h3>
 
             {trainingTopicSummary.length > 0 ? (
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid gap-4 md:grid-cols-2">
                 {trainingTopicSummary.map((topic) => (
                   <div
                     key={topic.topicName}
@@ -859,7 +863,7 @@ export default async function AdminPage() {
                 ))}
               </div>
             ) : (
-              <p className="rounded-xl bg-green-50 border border-green-200 p-5 text-green-900">
+              <p className="rounded-xl border border-green-200 bg-green-50 p-5 text-green-900">
                 Aktuálne sa nezobrazujú žiadne sledované alebo rizikové oblasti
                 pod hranicou 4,10.
               </p>
@@ -867,9 +871,7 @@ export default async function AdminPage() {
           </div>
 
           <div className="mt-8 rounded-xl border border-gray-200 bg-gray-50 p-5">
-            <h3 className="text-lg font-semibold">
-              Záver manažéra kvality
-            </h3>
+            <h3 className="text-lg font-semibold">Záver manažéra kvality</h3>
 
             {overallAverage !== null ? (
               <p className="mt-3 leading-relaxed text-gray-700">
@@ -893,7 +895,7 @@ export default async function AdminPage() {
       </section>
 
       <section className="mt-10">
-        <h2 className="text-2xl font-semibold mb-5">
+        <h2 className="mb-5 text-2xl font-semibold">
           Výsledky podľa zamestnanca
         </h2>
 
@@ -901,22 +903,12 @@ export default async function AdminPage() {
           {sortedEmployees.map((employee: any) => {
             const employeeLevel = getScoreLevel(employee.average);
 
-            const positiveComments = getCommentsByType(
-              employee.comments,
-              "positive"
-            );
-
-            const improvementComments = getCommentsByType(
-              employee.comments,
-              "improvement"
-            );
-
             return (
               <div
                 key={employee.id}
                 className="rounded-2xl border bg-white p-6 shadow-sm"
               >
-                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                   <div>
                     <h3 className="text-xl font-semibold">
                       {employee.first_name} {employee.last_name}
@@ -966,11 +958,11 @@ export default async function AdminPage() {
 
                 {Object.keys(employee.categoryStats).length > 0 && (
                   <div className="mt-6 border-t pt-5">
-                    <h4 className="font-semibold mb-4">
+                    <h4 className="mb-4 font-semibold">
                       Priemer podľa kategórií
                     </h4>
 
-                    <div className="grid md:grid-cols-2 gap-4">
+                    <div className="grid gap-4 md:grid-cols-2">
                       {Object.entries(employee.categoryStats).map(
                         ([categoryName, stats]: any) => {
                           const scoreLevel = getScoreLevel(stats.average);
@@ -1015,7 +1007,7 @@ export default async function AdminPage() {
 
                 {employee.evaluationCount > 0 && (
                   <div className="mt-6 border-t pt-5">
-                    <h4 className="font-semibold mb-4">
+                    <h4 className="mb-4 font-semibold">
                       Odporúčanie pre individuálny plán ďalšieho vzdelávania
                     </h4>
 
@@ -1030,7 +1022,7 @@ export default async function AdminPage() {
                               key={index}
                               className="rounded-xl border border-amber-200 bg-amber-50 p-5"
                             >
-                              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                              <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                                 <div>
                                   <p className="text-sm font-semibold text-amber-700">
                                     Slabšia / sledovaná oblasť
@@ -1056,12 +1048,12 @@ export default async function AdminPage() {
                                 </div>
                               </div>
 
-                              <p className="mt-4 text-gray-800 leading-relaxed">
+                              <p className="mt-4 leading-relaxed text-gray-800">
                                 {recommendation.summary}
                               </p>
 
-                              <div className="mt-4 grid md:grid-cols-3 gap-4">
-                                <div className="rounded-lg bg-white p-4 border border-amber-100">
+                              <div className="mt-4 grid gap-4 md:grid-cols-3">
+                                <div className="rounded-lg border border-amber-100 bg-white p-4">
                                   <p className="font-semibold text-gray-800">
                                     Odporúčaná forma podpory
                                   </p>
@@ -1071,7 +1063,7 @@ export default async function AdminPage() {
                                   </p>
                                 </div>
 
-                                <div className="rounded-lg bg-white p-4 border border-amber-100">
+                                <div className="rounded-lg border border-amber-100 bg-white p-4">
                                   <p className="font-semibold text-gray-800">
                                     Návrh osobného cieľa
                                   </p>
@@ -1081,7 +1073,7 @@ export default async function AdminPage() {
                                   </p>
                                 </div>
 
-                                <div className="rounded-lg bg-white p-4 border border-amber-100">
+                                <div className="rounded-lg border border-amber-100 bg-white p-4">
                                   <p className="font-semibold text-gray-800">
                                     Spôsob hodnotenia účelnosti, využiteľnosti a
                                     prenosu do praxe
@@ -1123,7 +1115,7 @@ export default async function AdminPage() {
 
                 {employee.evaluationCount === 0 && (
                   <div className="mt-6 border-t pt-5">
-                    <h4 className="font-semibold mb-3">
+                    <h4 className="mb-3 font-semibold">
                       Odporúčanie pre individuálny plán ďalšieho vzdelávania
                     </h4>
 
@@ -1144,9 +1136,7 @@ export default async function AdminPage() {
 
                 {employee.comments.length > 0 && (
                   <div className="mt-6 border-t pt-5">
-                    <h4 className="font-semibold mb-3">
-                      Slovné komentáre
-                    </h4>
+                    <h4 className="mb-3 font-semibold">Slovné komentáre</h4>
 
                     <div className="space-y-3">
                       {employee.comments.map(
