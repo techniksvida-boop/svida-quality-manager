@@ -85,7 +85,11 @@ export default function EvaluationForm({
       formData.get("example_comment") || ""
     ).trim();
 
-    const comments = [];
+    const comments: {
+      evaluation_id: string;
+      comment_type: string;
+      comment_text: string;
+    }[] = [];
 
     if (positiveComment) {
       comments.push({
@@ -144,18 +148,18 @@ export default function EvaluationForm({
   if (sent) {
     return (
       <div className="mt-10 rounded-xl p-6 svida-anonymity-box">
-        <h2 className="text-xl font-semibold svida-anonymity-title">
+        <h2 className="text-2xl font-bold svida-anonymity-title">
           Hodnotenie bolo úspešne odoslané.
         </h2>
 
-        <p className="mt-2 svida-anonymity-text">
+        <p className="mt-3 text-lg leading-relaxed svida-anonymity-text">
           Ďakujeme. Tohto zamestnanca už pod týmto anonymným kódom nebude možné
           hodnotiť znova.
         </p>
 
         <a
           href="/hodnotenie"
-          className="mt-5 inline-block rounded-xl px-5 py-3 font-semibold svida-btn"
+          className="mt-6 inline-block rounded-xl px-5 py-3 font-semibold svida-btn"
         >
           Pokračovať na ďalších zamestnancov
         </a>
@@ -165,7 +169,37 @@ export default function EvaluationForm({
 
   return (
     <form action={handleSubmit} className="mt-10 space-y-6">
-            <div className="rounded-xl p-6 svida-anonymity-box">
+      <div className="rounded-xl p-6 svida-info-box">
+        <h2 className="text-2xl font-bold mb-5 svida-info-title">
+          Ako hodnotiť
+        </h2>
+
+        <div className="space-y-3 text-lg text-gray-700">
+          <p>
+            <strong>1</strong> = vôbec nesúhlasím
+          </p>
+          <p>
+            <strong>2</strong> = skôr nesúhlasím
+          </p>
+          <p>
+            <strong>3</strong> = neviem posúdiť / čiastočne
+          </p>
+          <p>
+            <strong>4</strong> = skôr súhlasím
+          </p>
+          <p>
+            <strong>5</strong> = úplne súhlasím
+          </p>
+        </div>
+
+        <p className="mt-6 text-base text-gray-700">
+          Otázky označené červenou hviezdičkou{" "}
+          <span className="font-bold text-red-600">*</span> sú povinné.
+          Textové odpovede na konci formulára sú nepovinné.
+        </p>
+      </div>
+
+      <div className="rounded-xl p-6 svida-anonymity-box">
         <h2 className="text-2xl font-bold svida-anonymity-title mb-5">
           Anonymita hodnotenia
         </h2>
@@ -186,95 +220,76 @@ export default function EvaluationForm({
           </p>
         </div>
       </div>
-      </div>
-
-      <div className="rounded-xl p-6 svida-anonymity-box">
-        <h2 className="text-xl font-semibold svida-anonymity-title mb-3">
-          Anonymita hodnotenia
-        </h2>
-
-        <div className="space-y-2 svida-anonymity-text">
-          <p>
-            Hodnotenie je anonymné. V systéme sa neeviduje meno hodnotiacej
-            osoby.
-          </p>
-
-          <p>
-            Anonymný kód slúži iba na overenie prístupu a na zabezpečenie toho,
-            aby jeden zamestnanec nehodnotil toho istého pracovníka opakovane.
-          </p>
-
-          <p>
-            Každý anonymný kód môže ohodnotiť konkrétneho zamestnanca iba raz.
-          </p>
-        </div>
-         </div>
 
       {questions.map((question) => (
         <div key={question.id} className="rounded-xl border p-6 bg-white">
-          <p className="text-sm text-gray-500 mb-2">
+          <p className="text-base text-gray-500 mb-2">
             {question.evaluation_categories?.name}
           </p>
 
-          <h2 className="text-lg font-semibold mb-4">
+          <h2 className="text-xl font-semibold mb-5">
             {question.question} <span className="text-red-600">*</span>
           </h2>
 
           <div className="grid grid-cols-5 gap-3">
-  {[1, 2, 3, 4, 5].map((score) => (
-    <label key={score} className="cursor-pointer">
-      <input
-        type="radio"
-        name={question.id}
-        value={score}
-        required
-        className="peer sr-only"
-      />
+            {[1, 2, 3, 4, 5].map((score) => (
+              <label key={score} className="cursor-pointer">
+                <input
+                  type="radio"
+                  name={question.id}
+                  value={score}
+                  required
+                  className="peer sr-only"
+                />
 
-      <span className="flex h-14 items-center justify-center rounded-xl border border-gray-300 bg-white text-xl font-bold text-gray-700 transition peer-checked:border-[#df4a33] peer-checked:bg-[#df4a33] peer-checked:text-white hover:border-[#df4a33]">
-        {score}
-      </span>
-    </label>
-  ))}
-</div>
+                <span className="flex h-14 items-center justify-center rounded-xl border border-gray-300 bg-white text-xl font-bold text-gray-700 transition peer-checked:border-[#df4a33] peer-checked:bg-[#df4a33] peer-checked:text-white hover:border-[#df4a33]">
+                  {score}
+                </span>
+              </label>
+            ))}
+          </div>
+
+          <p className="mt-3 text-sm text-gray-500">
+            Vyberte jednu odpoveď od 1 do 5.
+          </p>
         </div>
       ))}
 
       <div className="rounded-xl border p-6 bg-white">
-        <label className="font-semibold block mb-3">
+        <label className="font-semibold block mb-3 text-lg">
           Čo tento zamestnanec robí podľa vás veľmi dobre?
         </label>
 
         <textarea
           name="positive_comment"
           rows={4}
-          className="w-full border rounded-lg p-3"
+          className="w-full border rounded-lg p-3 text-base"
           placeholder="Napíšte konkrétne silné stránky..."
         />
       </div>
 
       <div className="rounded-xl border p-6 bg-white">
-        <label className="font-semibold block mb-3">
+        <label className="font-semibold block mb-3 text-lg">
           V čom by sa tento zamestnanec mohol zlepšiť?
         </label>
 
         <textarea
           name="improvement_comment"
           rows={4}
-          className="w-full border rounded-lg p-3"
+          className="w-full border rounded-lg p-3 text-base"
           placeholder="Napíšte návrhy na zlepšenie..."
         />
       </div>
 
       <div className="rounded-xl border p-6 bg-white">
-        <label className="font-semibold block mb-3">
+        <label className="font-semibold block mb-3 text-lg">
           Máte konkrétny príklad situácie, ktorý vystihuje jeho/jej prácu?
         </label>
 
         <textarea
           name="example_comment"
           rows={4}
-          className="w-full border rounded-lg p-3"
+          className="w-full border rounded-lg p-3 text-base"
           placeholder="Opíšte konkrétnu situáciu, ak ju poznáte..."
         />
       </div>
@@ -282,7 +297,7 @@ export default function EvaluationForm({
       <button
         type="submit"
         disabled={loading}
-        className="rounded-xl px-6 py-3 font-semibold svida-btn"
+        className="rounded-xl px-6 py-4 text-lg font-semibold svida-btn"
       >
         {loading ? "Odosielam..." : "Odoslať anonymné hodnotenie"}
       </button>
