@@ -522,11 +522,24 @@ export default async function AdminPage() {
 
   return (
     <main className="max-w-6xl mx-auto p-8">
-      <h1 className="text-4xl font-bold">Manažérsky dashboard</h1>
+      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+  <div>
+    <h1 className="text-4xl font-bold">Manažérsky dashboard</h1>
 
-      <p className="mt-3 text-gray-500">
-        Prehľad anonymného hodnotenia zamestnancov sociálneho úseku.
-      </p>
+    <p className="mt-3 text-gray-500">
+      Prehľad anonymného hodnotenia zamestnancov sociálneho úseku.
+    </p>
+  </div>
+
+  <a
+    href="/admin/print-report"
+    target="_blank"
+    rel="noopener noreferrer"
+    className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+  >
+    Vytlačiť celkový manažérsky report
+  </a>
+</div>
 
       <div className="mt-8 grid md:grid-cols-4 gap-5">
         <div className="rounded-2xl border bg-white p-6 shadow-sm">
