@@ -418,7 +418,141 @@ export default async function PrintEmployeePage({
         <p>....................................................................................................</p>
       )}
 
-      <h2 style={sectionTitle}>Vyjadrenie zamestnanca</h2>
+      <h2 style={sectionTitle}>Dohodnuté osobné ciele zamestnanca</h2>
+
+<table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
+  <tbody>
+    <tr>
+      <td style={cellTitle}>Osobný cieľ č. 1</td>
+      <td style={cellValue}>
+        ....................................................................................................
+        <br />
+        ....................................................................................................
+      </td>
+    </tr>
+
+    <tr>
+      <td style={cellTitle}>Osobný cieľ č. 2</td>
+      <td style={cellValue}>
+        ....................................................................................................
+        <br />
+        ....................................................................................................
+      </td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 style={sectionTitle}>Dohodnuté úlohy a opatrenia</h2>
+
+<table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
+  <thead>
+    <tr>
+      <th style={cellTitle}>Úloha / opatrenie</th>
+      <th style={cellTitle}>Zodpovedná osoba</th>
+      <th style={cellTitle}>Termín splnenia</th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <tr>
+      <td style={cellValue}>
+        ....................................................................................
+        <br />
+        ....................................................................................
+      </td>
+      <td style={cellValue}>....................................</td>
+      <td style={cellValue}>....................................</td>
+    </tr>
+
+    <tr>
+      <td style={cellValue}>
+        ....................................................................................
+        <br />
+        ....................................................................................
+      </td>
+      <td style={cellValue}>....................................</td>
+      <td style={cellValue}>....................................</td>
+    </tr>
+
+    <tr>
+      <td style={cellValue}>
+        ....................................................................................
+        <br />
+        ....................................................................................
+      </td>
+      <td style={cellValue}>....................................</td>
+      <td style={cellValue}>....................................</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 style={sectionTitle}>Spôsob overenia zlepšenia / prenosu do praxe</h2>
+
+<table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
+  <tbody>
+    <tr>
+      <td style={cellTitle}>Spôsob overenia</td>
+      <td style={cellValue}>
+        ☐ kontrola zápisov v IS Cygnus
+        <br />
+        ☐ spätná väzba od nadriadeného zamestnanca
+        <br />
+        ☐ pozorovanie pri práci s PSS
+        <br />
+        ☐ vyhodnotenie splnenia osobného cieľa
+        <br />
+        ☐ supervízia
+        <br />
+        ☐ iné:
+        ........................................................................................
+      </td>
+    </tr>
+
+    <tr>
+      <td style={cellTitle}>Termín vyhodnotenia</td>
+      <td style={cellValue}>............................................................</td>
+    </tr>
+
+    <tr>
+      <td style={cellTitle}>Zodpovedná osoba za vyhodnotenie</td>
+      <td style={cellValue}>............................................................</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 style={sectionTitle}>Vyhodnotenie prijatých opatrení</h2>
+
+<div
+  style={{
+    border: "1px solid #000",
+    minHeight: "90px",
+    marginTop: "8px",
+    padding: "8px",
+  }}
+>
+  ....................................................................................................
+  <br />
+  ....................................................................................................
+  <br />
+  ....................................................................................................
+</div>
+
+<h2 style={sectionTitle}>Vyjadrenie zamestnanca</h2>
+
+<div
+  style={{
+    border: "1px solid #000",
+    minHeight: "90px",
+    marginTop: "8px",
+    padding: "8px",
+  }}
+>
+  ....................................................................................................
+  <br />
+  ....................................................................................................
+  <br />
+  ....................................................................................................
+</div>
 
       <div
         style={{
