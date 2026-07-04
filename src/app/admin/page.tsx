@@ -60,6 +60,14 @@ function getScoreLevel(score: number | null) {
   };
 }
 
+function getPositionName(employee: any) {
+  if (Array.isArray(employee.positions)) {
+    return employee.positions[0]?.name || "";
+  }
+
+  return employee.positions?.name || "";
+}
+
 function getRecommendationByCategory(
   categoryName: string,
   average: number
@@ -205,6 +213,146 @@ function getCommentsByType(comments: any[], type: string) {
   return comments.filter((comment) => comment.comment_type === type);
 }
 
+function getCategorySummary(
+  employeesWithStats: any[]
+): {
+  categoryName: string;
+  average: number;
+  count: number;
+}[] {
+  const summary: Record<
+    string,
+    {
+      total: number;
+      count: number;
+    }
+  > = {};
+
+  employeesWithStats.forEach((employee) => {
+    Object.entries(employee.categoryStats).forEach(
+      ([categoryName, stats]: any) => {
+        if (!summary[categoryName]) {
+          summary[categoryName] = {
+            total: 0,
+            count: 0,
+          };
+        }
+
+        summary[categoryName].total += stats.total;
+        summary[categoryName].count += stats.count;
+      }
+    );
+  });
+
+  return Object.entries(summary)
+    .map(([categoryName, stats]) => ({
+      categoryName,
+      average: stats.count > 0 ? stats.total / stats.count : 0,
+      count: stats.count,
+    }))
+    .sort((a, b) => b.average - a.average);
+}
+
+function getTrainingTopic(categoryName: string) {
+  const normalized = categoryName.toLowerCase();
+
+  if (
+    normalized.includes("dokument") ||
+    normalized.includes("záznam") ||
+    normalized.includes("cygnus") ||
+    normalized.includes("individu")
+  ) {
+    return "Práca s dokumentáciou, IS Cygnus a individuálnymi plánmi";
+  }
+
+  if (
+    normalized.includes("komunik") ||
+    normalized.includes("klient") ||
+    normalized.includes("prijímateľ") ||
+    normalized.includes("pss") ||
+    normalized.includes("empat") ||
+    normalized.includes("dôstoj")
+  ) {
+    return "Komunikácia s prijímateľom sociálnej služby a individuálny prístup";
+  }
+
+  if (
+    normalized.includes("tím") ||
+    normalized.includes("spolupr") ||
+    normalized.includes("kolekt") ||
+    normalized.includes("kolega") ||
+    normalized.includes("inform")
+  ) {
+    return "Tímová spolupráca a odovzdávanie informácií";
+  }
+
+  if (
+    normalized.includes("odborn") ||
+    normalized.includes("profesion") ||
+    normalized.includes("štandard") ||
+    normalized.includes("kvalit") ||
+    normalized.includes("etick") ||
+    normalized.includes("postup")
+  ) {
+    return "Štandardy kvality, odbornosť a profesionálny výkon práce";
+  }
+
+  if (
+    normalized.includes("rehabilit") ||
+    normalized.includes("aktiv") ||
+    normalized.includes("cieľ") ||
+    normalized.includes("plán") ||
+    normalized.includes("voľnočas") ||
+    normalized.includes("schopnost")
+  ) {
+    return "Sociálna rehabilitácia, aktivizácia a práca s cieľmi PSS";
+  }
+
+  return categoryName;
+}
+
+function getTrainingTopicSummary(employeesWithStats: any[]) {
+  const topics: Record<
+    string,
+    {
+      count: number;
+      employees: string[];
+    }
+  > = {};
+
+  employeesWithStats.forEach((employee) => {
+    Object.entries(employee.categoryStats).forEach(
+      ([categoryName, stats]: any) => {
+        if (stats.average >= 4.1) {
+          return;
+        }
+
+        const topic = getTrainingTopic(categoryName);
+
+        if (!topics[topic]) {
+          topics[topic] = {
+            count: 0,
+            employees: [],
+          };
+        }
+
+        topics[topic].count += 1;
+        topics[topic].employees.push(
+          `${employee.first_name} ${employee.last_name}`
+        );
+      }
+    );
+  });
+
+  return Object.entries(topics)
+    .map(([topicName, data]) => ({
+      topicName,
+      count: data.count,
+      employees: data.employees,
+    }))
+    .sort((a, b) => b.count - a.count);
+}
+
 export default async function AdminPage() {
   const { data: employees } = await supabase
     .from("employees")
@@ -326,6 +474,39 @@ export default async function AdminPage() {
     return b.average - a.average;
   });
 
+  const evaluatedEmployees = employeesWithStats.filter(
+    (employee: any) => employee.average !== null
+  );
+
+  const overallScores = evaluatedEmployees
+    .map((employee: any) => employee.average)
+    .filter((average: number | null) => average !== null);
+
+  const overallAverage =
+    overallScores.length > 0
+      ? overallScores.reduce((sum: number, score: number) => sum + score, 0) /
+        overallScores.length
+      : null;
+
+  const categorySummary = getCategorySummary(employeesWithStats);
+  const strongestCategories = categorySummary.slice(0, 3);
+  const riskiestCategories = [...categorySummary]
+    .sort((a, b) => a.average - b.average)
+    .slice(0, 3);
+
+  const trainingTopicSummary = getTrainingTopicSummary(employeesWithStats);
+
+  const topEmployees = sortedEmployees
+    .filter((employee: any) => employee.average !== null)
+    .slice(0, 5);
+
+  const weakestEmployees = [...sortedEmployees]
+    .filter((employee: any) => employee.average !== null)
+    .sort((a, b) => a.average - b.average)
+    .slice(0, 5);
+
+  const overallLevel = getScoreLevel(overallAverage);
+
   return (
     <main className="max-w-6xl mx-auto p-8">
       <h1 className="text-4xl font-bold">Manažérsky dashboard</h1>
@@ -362,6 +543,321 @@ export default async function AdminPage() {
 
       <section className="mt-10">
         <h2 className="text-2xl font-semibold mb-5">
+          Celkové výsledky hodnotenia
+        </h2>
+
+        <div className="rounded-2xl border bg-white p-6 shadow-sm">
+          <div className="grid md:grid-cols-3 gap-5">
+            <div className={`rounded-xl border p-5 ${overallLevel.cardClass}`}>
+              <p className="text-sm text-gray-600">
+                Celkový priemer hodnotenia
+              </p>
+
+              <p className={`mt-2 text-4xl font-bold ${overallLevel.valueClass}`}>
+                {overallAverage !== null ? overallAverage.toFixed(2) : "—"}
+              </p>
+
+              <p
+                className={`mt-3 inline-block rounded-full px-3 py-1 text-sm font-semibold ${overallLevel.badgeClass}`}
+              >
+                {overallLevel.label}
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-gray-200 bg-gray-50 p-5">
+              <p className="text-sm text-gray-600">
+                Počet hodnotených zamestnancov
+              </p>
+
+              <p className="mt-2 text-4xl font-bold">
+                {evaluatedEmployees.length}
+              </p>
+
+              <p className="mt-3 text-sm text-gray-500">
+                Z celkového počtu {employees?.length || 0} sledovaných
+                zamestnancov.
+              </p>
+            </div>
+
+            <div className="rounded-xl border border-gray-200 bg-gray-50 p-5">
+              <p className="text-sm text-gray-600">
+                Počet odoslaných hodnotení
+              </p>
+
+              <p className="mt-2 text-4xl font-bold">{usedEvaluations || 0}</p>
+
+              <p className="mt-3 text-sm text-gray-500">
+                Počet evidovaných použití anonymných hodnotiacich kódov.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-8 grid lg:grid-cols-2 gap-6">
+            <div>
+              <h3 className="text-lg font-semibold mb-4">
+                Poradie zamestnancov – najvyššie hodnotenie
+              </h3>
+
+              {topEmployees.length > 0 ? (
+                <div className="space-y-3">
+                  {topEmployees.map((employee: any, index: number) => {
+                    const level = getScoreLevel(employee.average);
+
+                    return (
+                      <div
+                        key={employee.id}
+                        className={`rounded-xl border p-4 ${level.cardClass}`}
+                      >
+                        <div className="flex items-center justify-between gap-4">
+                          <div>
+                            <p className="font-semibold">
+                              {index + 1}. {employee.first_name}{" "}
+                              {employee.last_name}
+                            </p>
+
+                            <p className="text-sm text-gray-600">
+                              {getPositionName(employee)}
+                            </p>
+                          </div>
+
+                          <div className="text-right">
+                            <p className={`text-2xl font-bold ${level.valueClass}`}>
+                              {employee.average.toFixed(2)}
+                            </p>
+
+                            <p
+                              className={`mt-1 inline-block rounded-full px-2 py-1 text-xs font-semibold ${level.badgeClass}`}
+                            >
+                              {level.label}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="rounded-xl bg-gray-50 p-4 text-gray-600">
+                  Zatiaľ nie sú dostupné hodnotenia zamestnancov.
+                </p>
+              )}
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold mb-4">
+                Poradie zamestnancov – najnižšie hodnotenie
+              </h3>
+
+              {weakestEmployees.length > 0 ? (
+                <div className="space-y-3">
+                  {weakestEmployees.map((employee: any, index: number) => {
+                    const level = getScoreLevel(employee.average);
+
+                    return (
+                      <div
+                        key={employee.id}
+                        className={`rounded-xl border p-4 ${level.cardClass}`}
+                      >
+                        <div className="flex items-center justify-between gap-4">
+                          <div>
+                            <p className="font-semibold">
+                              {index + 1}. {employee.first_name}{" "}
+                              {employee.last_name}
+                            </p>
+
+                            <p className="text-sm text-gray-600">
+                              {getPositionName(employee)}
+                            </p>
+                          </div>
+
+                          <div className="text-right">
+                            <p className={`text-2xl font-bold ${level.valueClass}`}>
+                              {employee.average.toFixed(2)}
+                            </p>
+
+                            <p
+                              className={`mt-1 inline-block rounded-full px-2 py-1 text-xs font-semibold ${level.badgeClass}`}
+                            >
+                              {level.label}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="rounded-xl bg-gray-50 p-4 text-gray-600">
+                  Zatiaľ nie sú dostupné hodnotenia zamestnancov.
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-8 grid lg:grid-cols-2 gap-6">
+            <div>
+              <h3 className="text-lg font-semibold mb-4">
+                Najsilnejšie oblasti
+              </h3>
+
+              {strongestCategories.length > 0 ? (
+                <div className="space-y-3">
+                  {strongestCategories.map((category) => {
+                    const level = getScoreLevel(category.average);
+
+                    return (
+                      <div
+                        key={category.categoryName}
+                        className={`rounded-xl border p-4 ${level.cardClass}`}
+                      >
+                        <div className="flex items-center justify-between gap-4">
+                          <div>
+                            <p className="font-semibold">
+                              {category.categoryName}
+                            </p>
+
+                            <p className="text-sm text-gray-600">
+                              Počet odpovedí: {category.count}
+                            </p>
+                          </div>
+
+                          <div className="text-right">
+                            <p className={`text-2xl font-bold ${level.valueClass}`}>
+                              {category.average.toFixed(2)}
+                            </p>
+
+                            <p
+                              className={`mt-1 inline-block rounded-full px-2 py-1 text-xs font-semibold ${level.badgeClass}`}
+                            >
+                              {level.label}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="rounded-xl bg-gray-50 p-4 text-gray-600">
+                  Zatiaľ nie sú dostupné kategórie hodnotenia.
+                </p>
+              )}
+            </div>
+
+            <div>
+              <h3 className="text-lg font-semibold mb-4">
+                Najrizikovejšie oblasti
+              </h3>
+
+              {riskiestCategories.length > 0 ? (
+                <div className="space-y-3">
+                  {riskiestCategories.map((category) => {
+                    const level = getScoreLevel(category.average);
+
+                    return (
+                      <div
+                        key={category.categoryName}
+                        className={`rounded-xl border p-4 ${level.cardClass}`}
+                      >
+                        <div className="flex items-center justify-between gap-4">
+                          <div>
+                            <p className="font-semibold">
+                              {category.categoryName}
+                            </p>
+
+                            <p className="text-sm text-gray-600">
+                              Počet odpovedí: {category.count}
+                            </p>
+                          </div>
+
+                          <div className="text-right">
+                            <p className={`text-2xl font-bold ${level.valueClass}`}>
+                              {category.average.toFixed(2)}
+                            </p>
+
+                            <p
+                              className={`mt-1 inline-block rounded-full px-2 py-1 text-xs font-semibold ${level.badgeClass}`}
+                            >
+                              {level.label}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="rounded-xl bg-gray-50 p-4 text-gray-600">
+                  Zatiaľ nie sú dostupné kategórie hodnotenia.
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-8">
+            <h3 className="text-lg font-semibold mb-4">
+              Odporúčané vzdelávacie témy
+            </h3>
+
+            {trainingTopicSummary.length > 0 ? (
+              <div className="grid md:grid-cols-2 gap-4">
+                {trainingTopicSummary.map((topic) => (
+                  <div
+                    key={topic.topicName}
+                    className="rounded-xl border border-amber-200 bg-amber-50 p-5"
+                  >
+                    <p className="font-semibold text-gray-900">
+                      {topic.topicName}
+                    </p>
+
+                    <p className="mt-2 text-sm text-gray-700">
+                      Odporúčané pre počet zamestnancov:{" "}
+                      <strong>{topic.count}</strong>
+                    </p>
+
+                    <p className="mt-2 text-sm text-gray-600">
+                      Podklad pre ročný plán vzdelávania a individuálne plány
+                      ďalšieho vzdelávania.
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="rounded-xl bg-green-50 border border-green-200 p-5 text-green-900">
+                Aktuálne sa nezobrazujú žiadne sledované alebo rizikové oblasti
+                pod hranicou 4,10.
+              </p>
+            )}
+          </div>
+
+          <div className="mt-8 rounded-xl border border-gray-200 bg-gray-50 p-5">
+            <h3 className="text-lg font-semibold">
+              Záver manažéra kvality
+            </h3>
+
+            {overallAverage !== null ? (
+              <p className="mt-3 leading-relaxed text-gray-700">
+                Celkové anonymné hodnotenie dosiahlo priemer{" "}
+                <strong>{overallAverage.toFixed(2)}</strong>, čo zodpovedá
+                úrovni <strong>{overallLevel.label.toLowerCase()}</strong>.
+                Výsledky je vhodné použiť ako manažérsky podklad pre hodnotiace
+                rozhovory, individuálne plány ďalšieho vzdelávania, plán
+                vzdelávania zamestnancov a identifikáciu oblastí, ktoré si
+                vyžadujú metodické vedenie, zaškolenie alebo supervíziu.
+              </p>
+            ) : (
+              <p className="mt-3 leading-relaxed text-gray-700">
+                Zatiaľ nie sú dostupné žiadne odoslané hodnotenia. Záver
+                manažéra kvality bude možné vytvoriť po prijatí prvých
+                anonymných hodnotení.
+              </p>
+            )}
+          </div>
+        </div>
+      </section>
+
+      <section className="mt-10">
+        <h2 className="text-2xl font-semibold mb-5">
           Výsledky podľa zamestnanca
         </h2>
 
@@ -391,7 +887,7 @@ export default async function AdminPage() {
                     </h3>
 
                     <p className="text-gray-500">
-                      {employee.positions?.name}
+                      {getPositionName(employee)}
                     </p>
 
                     <PrintButton recordId={`employee-record-${employee.id}`} />
@@ -634,398 +1130,6 @@ export default async function AdminPage() {
                     </div>
                   </div>
                 )}
-
-                <div
-                  id={`employee-record-${employee.id}`}
-                  data-print-record
-                  className="employee-print-record"
-                >
-                  <div style={{ textAlign: "center", marginBottom: "24px" }}>
-                    <h1 style={{ fontSize: "20pt", fontWeight: "bold" }}>
-                      Záznam z hodnotenia zamestnanca
-                    </h1>
-
-                    <p style={{ marginTop: "6px" }}>Senior dom Svida</p>
-                  </div>
-
-                  <table
-                    style={{
-                      width: "100%",
-                      borderCollapse: "collapse",
-                      marginBottom: "22px",
-                    }}
-                  >
-                    <tbody>
-                      <tr>
-                        <td
-                          style={{
-                            width: "32%",
-                            fontWeight: "bold",
-                            padding: "6px",
-                            border: "1px solid #000",
-                          }}
-                        >
-                          Meno zamestnanca
-                        </td>
-                        <td
-                          style={{
-                            padding: "6px",
-                            border: "1px solid #000",
-                          }}
-                        >
-                          {employee.first_name} {employee.last_name}
-                        </td>
-                      </tr>
-
-                      <tr>
-                        <td
-                          style={{
-                            fontWeight: "bold",
-                            padding: "6px",
-                            border: "1px solid #000",
-                          }}
-                        >
-                          Pracovná pozícia
-                        </td>
-                        <td
-                          style={{
-                            padding: "6px",
-                            border: "1px solid #000",
-                          }}
-                        >
-                          {employee.positions?.name || ""}
-                        </td>
-                      </tr>
-
-                      <tr>
-                        <td
-                          style={{
-                            fontWeight: "bold",
-                            padding: "6px",
-                            border: "1px solid #000",
-                          }}
-                        >
-                          Hodnotené obdobie
-                        </td>
-                        <td
-                          style={{
-                            padding: "6px",
-                            border: "1px solid #000",
-                          }}
-                        >
-                          ............................................................
-                        </td>
-                      </tr>
-
-                      <tr>
-                        <td
-                          style={{
-                            fontWeight: "bold",
-                            padding: "6px",
-                            border: "1px solid #000",
-                          }}
-                        >
-                          Dátum hodnotiaceho rozhovoru
-                        </td>
-                        <td
-                          style={{
-                            padding: "6px",
-                            border: "1px solid #000",
-                          }}
-                        >
-                          ............................................................
-                        </td>
-                      </tr>
-
-                      <tr>
-                        <td
-                          style={{
-                            fontWeight: "bold",
-                            padding: "6px",
-                            border: "1px solid #000",
-                          }}
-                        >
-                          Priemerný výsledok hodnotenia
-                        </td>
-                        <td
-                          style={{
-                            padding: "6px",
-                            border: "1px solid #000",
-                          }}
-                        >
-                          {employee.average !== null
-                            ? employee.average.toFixed(2)
-                            : "Zamestnanec zatiaľ nebol hodnotený"}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-
-                  <h2
-                    style={{
-                      fontSize: "14pt",
-                      fontWeight: "bold",
-                      marginTop: "18px",
-                    }}
-                  >
-                    Výsledky podľa kategórií
-                  </h2>
-
-                  {Object.keys(employee.categoryStats).length > 0 ? (
-                    <table
-                      style={{
-                        width: "100%",
-                        borderCollapse: "collapse",
-                        marginTop: "8px",
-                      }}
-                    >
-                      <thead>
-                        <tr>
-                          <th
-                            style={{
-                              textAlign: "left",
-                              padding: "6px",
-                              border: "1px solid #000",
-                            }}
-                          >
-                            Oblasť
-                          </th>
-                          <th
-                            style={{
-                              textAlign: "left",
-                              padding: "6px",
-                              border: "1px solid #000",
-                            }}
-                          >
-                            Priemer
-                          </th>
-                          <th
-                            style={{
-                              textAlign: "left",
-                              padding: "6px",
-                              border: "1px solid #000",
-                            }}
-                          >
-                            Počet odpovedí
-                          </th>
-                        </tr>
-                      </thead>
-
-                      <tbody>
-                        {Object.entries(employee.categoryStats).map(
-                          ([categoryName, stats]: any) => (
-                            <tr key={categoryName}>
-                              <td
-                                style={{
-                                  padding: "6px",
-                                  border: "1px solid #000",
-                                }}
-                              >
-                                {categoryName}
-                              </td>
-                              <td
-                                style={{
-                                  padding: "6px",
-                                  border: "1px solid #000",
-                                }}
-                              >
-                                {stats.average.toFixed(2)}
-                              </td>
-                              <td
-                                style={{
-                                  padding: "6px",
-                                  border: "1px solid #000",
-                                }}
-                              >
-                                {stats.count}
-                              </td>
-                            </tr>
-                          )
-                        )}
-                      </tbody>
-                    </table>
-                  ) : (
-                    <p style={{ marginTop: "8px" }}>
-                      Zamestnanec zatiaľ nebol hodnotený.
-                    </p>
-                  )}
-
-                  <h2
-                    style={{
-                      fontSize: "14pt",
-                      fontWeight: "bold",
-                      marginTop: "18px",
-                    }}
-                  >
-                    Silné stránky
-                  </h2>
-
-                  {positiveComments.length > 0 ? (
-                    <ul style={{ marginTop: "8px" }}>
-                      {positiveComments.map(
-                        (comment: any, index: number) => (
-                          <li key={index}>{comment.comment_text}</li>
-                        )
-                      )}
-                    </ul>
-                  ) : (
-                    <p style={{ marginTop: "8px" }}>
-                      Neboli uvedené slovné komentáre k silným stránkam.
-                    </p>
-                  )}
-
-                  <h2
-                    style={{
-                      fontSize: "14pt",
-                      fontWeight: "bold",
-                      marginTop: "18px",
-                    }}
-                  >
-                    Oblasti na zlepšenie
-                  </h2>
-
-                  {improvementComments.length > 0 ? (
-                    <ul style={{ marginTop: "8px" }}>
-                      {improvementComments.map(
-                        (comment: any, index: number) => (
-                          <li key={index}>{comment.comment_text}</li>
-                        )
-                      )}
-                    </ul>
-                  ) : (
-                    <p style={{ marginTop: "8px" }}>
-                      Neboli uvedené slovné komentáre k oblastiam na zlepšenie.
-                    </p>
-                  )}
-
-                  <h2
-                    style={{
-                      fontSize: "14pt",
-                      fontWeight: "bold",
-                      marginTop: "18px",
-                    }}
-                  >
-                    Odporúčanie pre individuálny plán ďalšieho vzdelávania
-                  </h2>
-
-                  {employee.trainingRecommendations.length > 0 ? (
-                    <div style={{ marginTop: "8px" }}>
-                      {employee.trainingRecommendations.map(
-                        (
-                          recommendation: Recommendation,
-                          index: number
-                        ) => (
-                          <div key={index} style={{ marginBottom: "12px" }}>
-                            <p>
-                              <strong>Slabšia / sledovaná oblasť:</strong>{" "}
-                              {recommendation.categoryName}
-                            </p>
-
-                            <p>
-                              <strong>Priemer:</strong>{" "}
-                              {recommendation.average.toFixed(2)}
-                            </p>
-
-                            <p>{recommendation.summary}</p>
-
-                            <p>
-                              <strong>Odporúčaná forma podpory:</strong>{" "}
-                              {recommendation.recommendedForm}
-                            </p>
-                          </div>
-                        )
-                      )}
-                    </div>
-                  ) : employee.evaluationCount > 0 ? (
-                    <p style={{ marginTop: "8px" }}>
-                      Zamestnanec nemá v aktuálnom anonymnom hodnotení žiadnu
-                      kategóriu s priemerom nižším ako 4,10. Individuálny plán
-                      ďalšieho vzdelávania je možné zamerať na priebežné
-                      udržiavanie odbornosti, aktualizačné vzdelávanie a osobné
-                      odborné ciele zamestnanca.
-                    </p>
-                  ) : (
-                    <p style={{ marginTop: "8px" }}>
-                      Odporúčanie bude dostupné po prijatí prvých anonymných
-                      hodnotení.
-                    </p>
-                  )}
-
-                  <h2
-                    style={{
-                      fontSize: "14pt",
-                      fontWeight: "bold",
-                      marginTop: "18px",
-                    }}
-                  >
-                    Navrhované opatrenie / osobný cieľ
-                  </h2>
-
-                  {employee.trainingRecommendations.length > 0 ? (
-                    <ul style={{ marginTop: "8px" }}>
-                      {employee.trainingRecommendations.map(
-                        (
-                          recommendation: Recommendation,
-                          index: number
-                        ) => (
-                          <li key={index}>{recommendation.suggestedGoal}</li>
-                        )
-                      )}
-                    </ul>
-                  ) : (
-                    <p style={{ marginTop: "8px" }}>
-                      ....................................................................................................
-                    </p>
-                  )}
-
-                  <h2
-                    style={{
-                      fontSize: "14pt",
-                      fontWeight: "bold",
-                      marginTop: "18px",
-                    }}
-                  >
-                    Vyjadrenie zamestnanca
-                  </h2>
-
-                  <div
-                    style={{
-                      border: "1px solid #000",
-                      minHeight: "90px",
-                      marginTop: "8px",
-                      padding: "8px",
-                    }}
-                  >
-                    ....................................................................................................
-                    <br />
-                    ....................................................................................................
-                    <br />
-                    ....................................................................................................
-                  </div>
-
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr",
-                      gap: "40px",
-                      marginTop: "44px",
-                    }}
-                  >
-                    <div>
-                      <div className="print-signature-line"></div>
-                      <p style={{ marginTop: "6px", textAlign: "center" }}>
-                        Podpis nadriadeného
-                      </p>
-                    </div>
-
-                    <div>
-                      <div className="print-signature-line"></div>
-                      <p style={{ marginTop: "6px", textAlign: "center" }}>
-                        Podpis zamestnanca
-                      </p>
-                    </div>
-                  </div>
-                </div>
               </div>
             );
           })}
