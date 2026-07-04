@@ -41,7 +41,7 @@ export default function StartPage() {
       <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
   <div className="mb-6 flex justify-center">
     <img
-      src="/logo-svida.png"
+      src="/logo-svida.jpg"
       alt="Senior dom Svida"
       className="h-24 w-auto"
     />

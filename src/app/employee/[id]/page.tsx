@@ -41,7 +41,7 @@ export default async function EmployeePage({ params }: Props) {
   <main className="max-w-3xl mx-auto p-8">
     <div className="mb-8 flex justify-center">
       <img
-        src="/logo-svida.png"
+        src="/logo-svida.jpg"
         alt="Senior dom Svida"
         className="h-24 w-auto"
       />
