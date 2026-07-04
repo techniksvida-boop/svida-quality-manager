@@ -1,7 +1,8 @@
 "use client";
 
 import { supabase } from "@/lib/supabase";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useState, type FormEvent } from "react";
 
 export default function EvaluationForm({
   employeeId,
@@ -12,8 +13,43 @@ export default function EvaluationForm({
   periodId: string;
   questions: any[];
 }) {
+  const router = useRouter();
+
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [missingQuestionIds, setMissingQuestionIds] = useState<string[]>([]);
+  const [validationMessage, setValidationMessage] = useState("");
+
+  async function handleFormSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+
+    const formData = new FormData(e.currentTarget);
+
+    const missing = questions
+      .filter((question) => !formData.get(question.id))
+      .map((question) => question.id);
+
+    if (missing.length > 0) {
+      setMissingQuestionIds(missing);
+      setValidationMessage(
+        "Zabudli ste vyplniť všetky povinné odpovede označené červenou hviezdičkou. Vráťte sa, prosím, k zvýrazneným otázkam a doplňte chýbajúce odpovede. Nevyplnené otázky sú označené červeným rámikom."
+      );
+
+      setTimeout(() => {
+        document.getElementById(`question-${missing[0]}`)?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }, 100);
+
+      return;
+    }
+
+    setMissingQuestionIds([]);
+    setValidationMessage("");
+
+    await handleSubmit(formData);
+  }
 
   async function handleSubmit(formData: FormData) {
     setLoading(true);
@@ -141,8 +177,28 @@ export default function EvaluationForm({
       return;
     }
 
-    setSent(true);
+    const { count: totalEmployees } = await supabase
+      .from("employees")
+      .select("*", { count: "exact", head: true })
+      .eq("is_active", true);
+
+    const { count: completedEvaluations } = await supabase
+      .from("voting_code_usage")
+      .select("*", { count: "exact", head: true })
+      .eq("voting_code_id", votingCodeId);
+
     setLoading(false);
+
+    if (
+      totalEmployees &&
+      completedEvaluations &&
+      completedEvaluations >= totalEmployees
+    ) {
+      router.push("/dakujeme");
+      return;
+    }
+
+    setSent(true);
   }
 
   if (sent) {
@@ -168,7 +224,7 @@ export default function EvaluationForm({
   }
 
   return (
-    <form action={handleSubmit} className="mt-10 space-y-6">
+    <form onSubmit={handleFormSubmit} noValidate className="mt-10 space-y-6">
       <div className="rounded-xl p-6 svida-info-box">
         <h2 className="text-2xl font-bold mb-5 svida-info-title">
           Ako hodnotiť
@@ -221,39 +277,71 @@ export default function EvaluationForm({
         </div>
       </div>
 
-      {questions.map((question) => (
-        <div key={question.id} className="rounded-xl border p-6 bg-white">
-          <p className="text-base text-gray-500 mb-2">
-            {question.evaluation_categories?.name}
-          </p>
-
-          <h2 className="text-xl font-semibold mb-5">
-            {question.question} <span className="text-red-600">*</span>
-          </h2>
-
-          <div className="grid grid-cols-5 gap-3">
-            {[1, 2, 3, 4, 5].map((score) => (
-              <label key={score} className="cursor-pointer">
-                <input
-                  type="radio"
-                  name={question.id}
-                  value={score}
-                  required
-                  className="peer sr-only"
-                />
-
-                <span className="flex h-14 items-center justify-center rounded-xl border border-gray-300 bg-white text-xl font-bold text-gray-700 transition peer-checked:border-[#df4a33] peer-checked:bg-[#df4a33] peer-checked:text-white hover:border-[#df4a33]">
-                  {score}
-                </span>
-              </label>
-            ))}
-          </div>
-
-          <p className="mt-3 text-sm text-gray-500">
-            Vyberte jednu odpoveď od 1 do 5.
+      {validationMessage && (
+        <div className="rounded-xl border border-red-400 bg-red-50 p-5 text-red-800">
+          <p className="text-xl font-bold">Formulár nie je úplne vyplnený</p>
+          <p className="mt-2 text-base leading-relaxed">
+            {validationMessage}
           </p>
         </div>
-      ))}
+      )}
+
+      {questions.map((question) => {
+        const isMissing = missingQuestionIds.includes(question.id);
+
+        return (
+          <div
+            id={`question-${question.id}`}
+            key={question.id}
+            className={`rounded-xl border p-6 ${
+              isMissing
+                ? "border-red-500 bg-red-50"
+                : "border-gray-200 bg-white"
+            }`}
+          >
+            <p className="text-base text-gray-500 mb-2">
+              {question.evaluation_categories?.name}
+            </p>
+
+            <h2 className="text-xl font-semibold mb-5">
+              {question.question} <span className="text-red-600">*</span>
+            </h2>
+
+            {isMissing && (
+              <p className="mb-4 rounded-lg bg-red-100 px-4 py-3 text-base font-semibold text-red-700">
+                Túto povinnú otázku ste ešte nevyplnili.
+              </p>
+            )}
+
+            <div className="grid grid-cols-5 gap-3">
+              {[1, 2, 3, 4, 5].map((score) => (
+                <label key={score} className="cursor-pointer">
+                  <input
+                    type="radio"
+                    name={question.id}
+                    value={score}
+                    required
+                    className="peer sr-only"
+                    onChange={() => {
+                      setMissingQuestionIds((current) =>
+                        current.filter((id) => id !== question.id)
+                      );
+                    }}
+                  />
+
+                  <span className="flex h-14 items-center justify-center rounded-xl border border-gray-300 bg-white text-xl font-bold text-gray-700 transition peer-checked:border-[#df4a33] peer-checked:bg-[#df4a33] peer-checked:text-white hover:border-[#df4a33]">
+                    {score}
+                  </span>
+                </label>
+              ))}
+            </div>
+
+            <p className="mt-3 text-sm text-gray-500">
+              Vyberte jednu odpoveď od 1 do 5.
+            </p>
+          </div>
+        );
+      })}
 
       <div className="rounded-xl border p-6 bg-white">
         <label className="font-semibold block mb-3 text-lg">
