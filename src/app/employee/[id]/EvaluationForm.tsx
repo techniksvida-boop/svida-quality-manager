@@ -143,19 +143,19 @@ export default function EvaluationForm({
 
   if (sent) {
     return (
-      <div className="mt-10 rounded-xl border p-6 bg-green-50">
-        <h2 className="text-xl font-semibold text-green-800">
+      <div className="mt-10 rounded-xl p-6 svida-anonymity-box">
+        <h2 className="text-xl font-semibold svida-anonymity-title">
           Hodnotenie bolo úspešne odoslané.
         </h2>
 
-        <p className="mt-2 text-green-700">
+        <p className="mt-2 svida-anonymity-text">
           Ďakujeme. Tohto zamestnanca už pod týmto anonymným kódom nebude možné
           hodnotiť znova.
         </p>
 
         <a
           href="/hodnotenie"
-          className="mt-5 inline-block rounded-xl bg-green-700 px-5 py-3 font-semibold text-white"
+          className="mt-5 inline-block rounded-xl px-5 py-3 font-semibold svida-btn"
         >
           Pokračovať na ďalších zamestnancov
         </a>
@@ -165,8 +165,8 @@ export default function EvaluationForm({
 
   return (
     <form action={handleSubmit} className="mt-10 space-y-6">
-      <div className="rounded-xl border bg-blue-50 p-6">
-        <h2 className="text-xl font-semibold mb-4">
+      <div className="rounded-xl p-6 svida-info-box">
+        <h2 className="text-xl font-semibold mb-4 svida-info-title">
           Ako hodnotiť
         </h2>
 
@@ -194,14 +194,16 @@ export default function EvaluationForm({
           Textové odpovede na konci formulára sú nepovinné.
         </p>
       </div>
-            <div className="rounded-xl border border-green-200 bg-green-50 p-6">
-        <h2 className="text-xl font-semibold text-green-800 mb-3">
+
+      <div className="rounded-xl p-6 svida-anonymity-box">
+        <h2 className="text-xl font-semibold svida-anonymity-title mb-3">
           Anonymita hodnotenia
         </h2>
 
-        <div className="space-y-2 text-green-800">
+        <div className="space-y-2 svida-anonymity-text">
           <p>
-            Hodnotenie je anonymné. V systéme sa neeviduje meno hodnotiacej osoby.
+            Hodnotenie je anonymné. V systéme sa neeviduje meno hodnotiacej
+            osoby.
           </p>
 
           <p>
@@ -283,9 +285,9 @@ export default function EvaluationForm({
       <button
         type="submit"
         disabled={loading}
-        className="rounded-xl bg-blue-600 px-6 py-3 text-white font-semibold disabled:opacity-50"
+        className="rounded-xl px-6 py-3 font-semibold svida-btn"
       >
-        {loading ? "Odosielam..." : "Odoslať hodnotenie"}
+        {loading ? "Odosielam..." : "Odoslať anonymné hodnotenie"}
       </button>
     </form>
   );
