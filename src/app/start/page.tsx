@@ -37,8 +37,8 @@ export default function StartPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-slate-100 p-6">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
+    <main className="min-h-screen flex items-center justify-center svida-page-bg p-6">
+      <div className="w-full max-w-md rounded-2xl p-8 svida-card">
   <div className="mb-6 flex justify-center">
     <img
       src="/logo-svida.jpg"
@@ -73,7 +73,7 @@ export default function StartPage() {
           <button
             type="submit"
             disabled={loading || code.length !== 4}
-            className="w-full rounded-xl bg-blue-600 py-4 font-semibold text-white disabled:opacity-50"
+            className="w-full rounded-xl py-4 font-semibold svida-btn"
           >
             {loading ? "Overujem..." : "Pokračovať"}
           </button>
