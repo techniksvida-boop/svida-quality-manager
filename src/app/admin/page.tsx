@@ -2,6 +2,168 @@ export const dynamic = "force-dynamic";
 
 import { supabase } from "@/lib/supabase";
 
+type Recommendation = {
+  categoryName: string;
+  average: number;
+  priority: string;
+  summary: string;
+  recommendedForm: string;
+  suggestedGoal: string;
+};
+
+function getPriority(average: number) {
+  if (average < 3) {
+    return "Vysoká priorita";
+  }
+
+  if (average < 3.5) {
+    return "Stredná priorita";
+  }
+
+  return "Nízka priorita";
+}
+
+function getRecommendationByCategory(
+  categoryName: string,
+  average: number
+): Recommendation {
+  const normalized = categoryName.toLowerCase();
+  const priority = getPriority(average);
+
+  if (
+    normalized.includes("dokument") ||
+    normalized.includes("záznam") ||
+    normalized.includes("cygnus") ||
+    normalized.includes("individu")
+  ) {
+    return {
+      categoryName,
+      average,
+      priority,
+      summary:
+        "Zamestnanec dosiahol nižšie hodnotenie v oblasti dokumentácie, vedenia záznamov alebo práce s IS Cygnus. Odporúča sa zamerať individuálny plán ďalšieho vzdelávania na kvalitu, pravidelnosť a vecnosť zápisov, správne vedenie záznamov o práci s prijímateľom sociálnej služby a prepojenie dokumentácie s individuálnymi cieľmi PSS.",
+      recommendedForm:
+        "Interné metodické zaškolenie, praktický nácvik práce s IS Cygnus, kontrola vzorových zápisov a následná spätná väzba od vedúceho zamestnanca.",
+      suggestedGoal:
+        "Do nasledujúceho hodnotiaceho obdobia zlepšiť úplnosť, konkrétnosť a pravidelnosť záznamov v IS Cygnus tak, aby dokumentácia preukázateľne zachytávala priebeh, výsledky a dopad práce s PSS.",
+    };
+  }
+
+  if (
+    normalized.includes("komunik") ||
+    normalized.includes("klient") ||
+    normalized.includes("prijímateľ") ||
+    normalized.includes("pss") ||
+    normalized.includes("empat") ||
+    normalized.includes("dôstoj")
+  ) {
+    return {
+      categoryName,
+      average,
+      priority,
+      summary:
+        "Zamestnanec dosiahol nižšie hodnotenie v oblasti komunikácie a prístupu k prijímateľovi sociálnej služby. Odporúča sa zamerať individuálny plán ďalšieho vzdelávania na empatickú komunikáciu, individuálny prístup, rešpektovanie dôstojnosti PSS a zvládanie náročných komunikačných situácií.",
+      recommendedForm:
+        "Vzdelávanie v oblasti komunikácie s klientom, modelové situácie, metodické vedenie a podľa potreby skupinová alebo individuálna supervízia.",
+      suggestedGoal:
+        "Do nasledujúceho hodnotiaceho obdobia posilniť partnerský, rešpektujúci a individuálny prístup v každodennej komunikácii s PSS.",
+    };
+  }
+
+  if (
+    normalized.includes("tím") ||
+    normalized.includes("spolupr") ||
+    normalized.includes("kolekt") ||
+    normalized.includes("kolega") ||
+    normalized.includes("inform")
+  ) {
+    return {
+      categoryName,
+      average,
+      priority,
+      summary:
+        "Zamestnanec dosiahol nižšie hodnotenie v oblasti tímovej spolupráce a odovzdávania informácií. Odporúča sa zamerať individuálny plán ďalšieho vzdelávania na tímovú komunikáciu, spoluprácu medzi úsekmi, konštruktívne riešenie problémov a zodpovedné odovzdávanie informácií.",
+      recommendedForm:
+        "Interné školenie alebo pracovné stretnutie k tímovej spolupráci, pravidlám komunikácie a odovzdávania informácií; pri pretrvávajúcich ťažkostiach skupinová supervízia.",
+      suggestedGoal:
+        "Do nasledujúceho hodnotiaceho obdobia zlepšiť spoluprácu s kolegami, včasné odovzdávanie dôležitých informácií a aktívne riešenie pracovných situácií v tíme.",
+    };
+  }
+
+  if (
+    normalized.includes("odborn") ||
+    normalized.includes("profesion") ||
+    normalized.includes("štandard") ||
+    normalized.includes("kvalit") ||
+    normalized.includes("etick") ||
+    normalized.includes("postup")
+  ) {
+    return {
+      categoryName,
+      average,
+      priority,
+      summary:
+        "Zamestnanec dosiahol nižšie hodnotenie v oblasti odbornosti, profesionality alebo dodržiavania štandardov kvality. Odporúča sa zamerať individuálny plán ďalšieho vzdelávania na odborné postupy, etický kódex, štandardy kvality a povinnosti odborného zamestnanca pri poskytovaní sociálnej služby.",
+      recommendedForm:
+        "Vzdelávanie k štandardom kvality, interné metodické usmernenie, oboznámenie s odbornými postupmi a následné overenie prenosu poznatkov do praxe.",
+      suggestedGoal:
+        "Do nasledujúceho hodnotiaceho obdobia posilniť odborné a profesionálne vykonávanie pracovných činností v súlade so štandardmi kvality a internými postupmi zariadenia.",
+    };
+  }
+
+  if (
+    normalized.includes("rehabilit") ||
+    normalized.includes("aktiv") ||
+    normalized.includes("cieľ") ||
+    normalized.includes("plán") ||
+    normalized.includes("voľnočas") ||
+    normalized.includes("schopnost")
+  ) {
+    return {
+      categoryName,
+      average,
+      priority,
+      summary:
+        "Zamestnanec dosiahol nižšie hodnotenie v oblasti sociálnej rehabilitácie, aktivizácie alebo práce s cieľmi prijímateľa sociálnej služby. Odporúča sa zamerať individuálny plán ďalšieho vzdelávania na aktivizáciu PSS, sociálnu rehabilitáciu, individuálne plánovanie a vyhodnocovanie osobných cieľov.",
+      recommendedForm:
+        "Metodické vedenie k individuálnemu plánovaniu, školenie k sociálnej rehabilitácii a praktické príklady práce s cieľmi PSS.",
+      suggestedGoal:
+        "Do nasledujúceho hodnotiaceho obdobia zlepšiť schopnosť plánovať, realizovať a vyhodnocovať aktivity tak, aby boli preukázateľne prepojené s individuálnymi potrebami a cieľmi PSS.",
+    };
+  }
+
+  return {
+    categoryName,
+    average,
+    priority,
+    summary:
+      "Zamestnanec dosiahol nižšie hodnotenie v tejto pracovnej oblasti. Odporúča sa zaradiť túto oblasť do individuálneho plánu ďalšieho vzdelávania a počas hodnotiaceho rozhovoru presnejšie určiť príčinu nižšieho hodnotenia.",
+    recommendedForm:
+      "Individuálny hodnotiaci rozhovor, metodické vedenie najbližším nadriadeným a následné vyhodnotenie zlepšenia v ďalšom období.",
+    suggestedGoal:
+      "Do nasledujúceho hodnotiaceho obdobia prijať konkrétne opatrenie na zlepšenie tejto pracovnej oblasti a overiť jeho účinnosť v praxi.",
+  };
+}
+
+function createTrainingRecommendations(
+  categoryStats: Record<
+    string,
+    {
+      total: number;
+      count: number;
+      average: number;
+    }
+  >
+) {
+  return Object.entries(categoryStats)
+    .map(([categoryName, stats]) =>
+      getRecommendationByCategory(categoryName, stats.average)
+    )
+    .filter((recommendation) => recommendation.average < 3.5)
+    .sort((a, b) => a.average - b.average)
+    .slice(0, 2);
+}
+
 export default async function AdminPage() {
   const { data: employees } = await supabase
     .from("employees")
@@ -102,6 +264,9 @@ export default async function AdminPage() {
         employeeEvaluationIds.includes(comment.evaluation_id)
       ) || [];
 
+    const trainingRecommendations =
+      createTrainingRecommendations(categoryStats);
+
     return {
       ...employee,
       evaluationCount: employeeEvaluations.length,
@@ -109,6 +274,7 @@ export default async function AdminPage() {
       average,
       categoryStats,
       comments: employeeComments,
+      trainingRecommendations,
     };
   });
 
@@ -236,6 +402,99 @@ export default async function AdminPage() {
                 </div>
               )}
 
+              {employee.evaluationCount > 0 && (
+                <div className="mt-6 border-t pt-5">
+                  <h4 className="font-semibold mb-4">
+                    Odporúčanie pre individuálny plán ďalšieho vzdelávania
+                  </h4>
+
+                  {employee.trainingRecommendations.length > 0 ? (
+                    <div className="space-y-4">
+                      {employee.trainingRecommendations.map(
+                        (recommendation: Recommendation, index: number) => (
+                          <div
+                            key={index}
+                            className="rounded-xl border border-amber-200 bg-amber-50 p-5"
+                          >
+                            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                              <div>
+                                <p className="text-sm font-semibold text-amber-700">
+                                  Slabšia oblasť
+                                </p>
+
+                                <p className="text-lg font-bold text-gray-900">
+                                  {recommendation.categoryName}
+                                </p>
+                              </div>
+
+                              <div className="text-left md:text-right">
+                                <p className="text-sm text-gray-600">
+                                  Priemer v oblasti
+                                </p>
+
+                                <p className="text-2xl font-bold text-amber-700">
+                                  {recommendation.average.toFixed(2)}
+                                </p>
+
+                                <p className="mt-1 text-sm font-semibold text-gray-700">
+                                  {recommendation.priority}
+                                </p>
+                              </div>
+                            </div>
+
+                            <p className="mt-4 text-gray-800 leading-relaxed">
+                              {recommendation.summary}
+                            </p>
+
+                            <div className="mt-4 grid md:grid-cols-2 gap-4">
+                              <div className="rounded-lg bg-white p-4 border border-amber-100">
+                                <p className="font-semibold text-gray-800">
+                                  Odporúčaná forma podpory
+                                </p>
+
+                                <p className="mt-2 text-sm leading-relaxed text-gray-700">
+                                  {recommendation.recommendedForm}
+                                </p>
+                              </div>
+
+                              <div className="rounded-lg bg-white p-4 border border-amber-100">
+                                <p className="font-semibold text-gray-800">
+                                  Návrh osobného cieľa
+                                </p>
+
+                                <p className="mt-2 text-sm leading-relaxed text-gray-700">
+                                  {recommendation.suggestedGoal}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-green-200 bg-green-50 p-5">
+                      <p className="font-semibold text-green-800">
+                        Bez výraznej potreby rozvojového opatrenia
+                      </p>
+
+                      <p className="mt-2 text-sm leading-relaxed text-green-900">
+                        Zamestnanec nemá v aktuálnom anonymnom hodnotení žiadnu
+                        kategóriu s priemerom nižším ako 3,50. Individuálny plán
+                        ďalšieho vzdelávania je možné zamerať na priebežné
+                        udržiavanie odbornosti, aktualizačné vzdelávanie a
+                        osobné odborné ciele zamestnanca.
+                      </p>
+                    </div>
+                  )}
+
+                  <p className="mt-4 text-sm leading-relaxed text-gray-500">
+                    Odporúčanie je automaticky vytvorené z anonymného hodnotenia
+                    a slúži ako podklad pre hodnotiaci rozhovor, nie ako
+                    samostatné personálne rozhodnutie.
+                  </p>
+                </div>
+              )}
+
               {employee.comments.length > 0 && (
                 <div className="mt-6 border-t pt-5">
                   <h4 className="font-semibold mb-3">
@@ -255,6 +514,10 @@ export default async function AdminPage() {
                             "V čom sa môže zlepšiť"}
                           {comment.comment_type === "example" &&
                             "Konkrétny príklad"}
+                          {comment.comment_type !== "positive" &&
+                            comment.comment_type !== "improvement" &&
+                            comment.comment_type !== "example" &&
+                            "Komentár"}
                         </p>
 
                         <p className="mt-1 text-gray-700">
