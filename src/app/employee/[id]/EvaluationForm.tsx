@@ -227,19 +227,23 @@ export default function EvaluationForm({
             {question.question} <span className="text-red-600">*</span>
           </h2>
 
-          <div className="flex flex-wrap gap-4">
-            {[1, 2, 3, 4, 5].map((score) => (
-              <label key={score} className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  name={question.id}
-                  value={score}
-                  required
-                />
-                {score}
-              </label>
-            ))}
-          </div>
+          <div className="grid grid-cols-5 gap-3">
+  {[1, 2, 3, 4, 5].map((score) => (
+    <label key={score} className="cursor-pointer">
+      <input
+        type="radio"
+        name={question.id}
+        value={score}
+        required
+        className="peer sr-only"
+      />
+
+      <span className="flex h-14 items-center justify-center rounded-xl border border-gray-300 bg-white text-xl font-bold text-gray-700 transition peer-checked:border-[#df4a33] peer-checked:bg-[#df4a33] peer-checked:text-white hover:border-[#df4a33]">
+        {score}
+      </span>
+    </label>
+  ))}
+</div>
         </div>
       ))}
 
