@@ -94,8 +94,22 @@ export default function EvaluationForm({
   }
 
   return (
-    <form action={handleSubmit} className="mt-10 space-y-6">
-      {questions.map((question) => (
+  <form action={handleSubmit} className="mt-10 space-y-6">
+    <div className="rounded-xl border bg-blue-50 p-6">
+      <h2 className="text-xl font-semibold mb-4">
+        Ako hodnotiť
+      </h2>
+
+      <div className="space-y-2 text-gray-700">
+        <p><strong>1</strong> = vôbec nesúhlasím</p>
+        <p><strong>2</strong> = skôr nesúhlasím</p>
+        <p><strong>3</strong> = neviem posúdiť / čiastočne</p>
+        <p><strong>4</strong> = skôr súhlasím</p>
+        <p><strong>5</strong> = úplne súhlasím</p>
+      </div>
+    </div>
+
+    {questions.map((question) => (
         <div key={question.id} className="rounded-xl border p-6 bg-white">
           <p className="text-sm text-gray-500 mb-2">
             {question.evaluation_categories?.name}
