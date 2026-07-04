@@ -1,4 +1,5 @@
 export const dynamic = "force-dynamic";
+
 import { supabase } from "@/lib/supabase";
 
 export default async function AdminPage() {
@@ -12,6 +13,11 @@ export default async function AdminPage() {
     .from("evaluations")
     .select("id, evaluated_employee_id, submitted_at")
     .eq("is_submitted", true);
+
+  const { data: questions } = await supabase
+    .from("evaluation_questions")
+    .select("id, question, evaluation_categories(name)")
+    .eq("is_active", true);
 
   const { data: answers } = await supabase
     .from("evaluation_answers")
@@ -32,6 +38,15 @@ export default async function AdminPage() {
   const evaluatedEmployeeIds = new Set(
     (evaluations || []).map((evaluation) => evaluation.evaluated_employee_id)
   );
+
+  const questionMap = new Map();
+
+  (questions || []).forEach((question: any) => {
+    questionMap.set(question.id, {
+      question: question.question,
+      category: question.evaluation_categories?.name || "Bez kategórie",
+    });
+  });
 
   const employeesWithStats = (employees || []).map((employee: any) => {
     const employeeEvaluations =
@@ -55,6 +70,33 @@ export default async function AdminPage() {
         ? scores.reduce((sum, score) => sum + score, 0) / scores.length
         : null;
 
+    const categoryStats: Record<
+      string,
+      {
+        total: number;
+        count: number;
+        average: number;
+      }
+    > = {};
+
+    employeeAnswers.forEach((answer: any) => {
+      const questionInfo = questionMap.get(answer.question_id);
+      const categoryName = questionInfo?.category || "Bez kategórie";
+
+      if (!categoryStats[categoryName]) {
+        categoryStats[categoryName] = {
+          total: 0,
+          count: 0,
+          average: 0,
+        };
+      }
+
+      categoryStats[categoryName].total += Number(answer.score);
+      categoryStats[categoryName].count += 1;
+      categoryStats[categoryName].average =
+        categoryStats[categoryName].total / categoryStats[categoryName].count;
+    });
+
     const employeeComments =
       comments?.filter((comment) =>
         employeeEvaluationIds.includes(comment.evaluation_id)
@@ -65,6 +107,7 @@ export default async function AdminPage() {
       evaluationCount: employeeEvaluations.length,
       answerCount: scores.length,
       average,
+      categoryStats,
       comments: employeeComments,
     };
   });
@@ -157,6 +200,41 @@ export default async function AdminPage() {
                   </div>
                 </div>
               </div>
+
+              {Object.keys(employee.categoryStats).length > 0 && (
+                <div className="mt-6 border-t pt-5">
+                  <h4 className="font-semibold mb-4">
+                    Priemer podľa kategórií
+                  </h4>
+
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {Object.entries(employee.categoryStats).map(
+                      ([categoryName, stats]: any) => (
+                        <div
+                          key={categoryName}
+                          className="rounded-xl bg-gray-50 p-4"
+                        >
+                          <div className="flex items-center justify-between gap-4">
+                            <div>
+                              <p className="font-semibold text-gray-800">
+                                {categoryName}
+                              </p>
+
+                              <p className="text-sm text-gray-500">
+                                Počet odpovedí: {stats.count}
+                              </p>
+                            </div>
+
+                            <p className="text-2xl font-bold">
+                              {stats.average.toFixed(2)}
+                            </p>
+                          </div>
+                        </div>
+                      )
+                    )}
+                  </div>
+                </div>
+              )}
 
               {employee.comments.length > 0 && (
                 <div className="mt-6 border-t pt-5">
