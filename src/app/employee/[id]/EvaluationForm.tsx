@@ -65,15 +65,39 @@ export default function EvaluationForm({
 
     await supabase.from("evaluation_answers").insert(answers);
 
-    const comment = String(formData.get("comment") || "").trim();
+    const positiveComment = String(formData.get("positive_comment") || "").trim();
+const improvementComment = String(formData.get("improvement_comment") || "").trim();
+const exampleComment = String(formData.get("example_comment") || "").trim();
 
-    if (comment) {
-      await supabase.from("evaluation_comments").insert({
-        evaluation_id: evaluation.id,
-        comment_type: "general",
-        comment_text: comment,
-      });
-    }
+const comments = [];
+
+if (positiveComment) {
+  comments.push({
+    evaluation_id: evaluation.id,
+    comment_type: "positive",
+    comment_text: positiveComment,
+  });
+}
+
+if (improvementComment) {
+  comments.push({
+    evaluation_id: evaluation.id,
+    comment_type: "improvement",
+    comment_text: improvementComment,
+  });
+}
+
+if (exampleComment) {
+  comments.push({
+    evaluation_id: evaluation.id,
+    comment_type: "example",
+    comment_text: exampleComment,
+  });
+}
+
+if (comments.length > 0) {
+  await supabase.from("evaluation_comments").insert(comments);
+}
 
     await supabase.from("voting_code_usage").insert({
       voting_code_id: votingCodeId,
@@ -130,15 +154,41 @@ export default function EvaluationForm({
         </div>
       ))}
 
-      <div className="rounded-xl border p-6 bg-white">
-        <label className="font-semibold block mb-3">Slovný komentár</label>
-        <textarea
-          name="comment"
-          rows={5}
-          className="w-full border rounded-lg p-3"
-          placeholder="Napíšte stručný komentár..."
-        />
-      </div>
+     <div className="rounded-xl border p-6 bg-white">
+  <label className="font-semibold block mb-3">
+    Čo tento zamestnanec robí podľa vás veľmi dobre?
+  </label>
+  <textarea
+    name="positive_comment"
+    rows={4}
+    className="w-full border rounded-lg p-3"
+    placeholder="Napíšte konkrétne silné stránky..."
+  />
+</div>
+
+<div className="rounded-xl border p-6 bg-white">
+  <label className="font-semibold block mb-3">
+    V čom by sa tento zamestnanec mohol zlepšiť?
+  </label>
+  <textarea
+    name="improvement_comment"
+    rows={4}
+    className="w-full border rounded-lg p-3"
+    placeholder="Napíšte návrhy na zlepšenie..."
+  />
+</div>
+
+<div className="rounded-xl border p-6 bg-white">
+  <label className="font-semibold block mb-3">
+    Máte konkrétny príklad situácie, ktorý vystihuje jeho/jej prácu?
+  </label>
+  <textarea
+    name="example_comment"
+    rows={4}
+    className="w-full border rounded-lg p-3"
+    placeholder="Opíšte konkrétnu situáciu, ak ju poznáte..."
+  />
+</div>
 
       <button
         type="submit"
