@@ -39,9 +39,17 @@ export default function StartPage() {
   return (
     <main className="min-h-screen flex items-center justify-center bg-slate-100 p-6">
       <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-lg">
-        <h1 className="text-3xl font-bold text-center">
-          Anonymné hodnotenie
-        </h1>
+  <div className="mb-6 flex justify-center">
+    <img
+      src="/logo-svida.png"
+      alt="Senior dom Svida"
+      className="h-24 w-auto"
+    />
+  </div>
+
+  <h1 className="text-3xl font-bold text-center">
+    Anonymné hodnotenie
+  </h1>
 
         <p className="mt-3 text-center text-gray-500">
           Zadajte svoj 4-miestny anonymný kód.
