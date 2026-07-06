@@ -84,12 +84,14 @@ export default function EvaluationForm({
     return true;
   }
 
-  function goNext() {
-    if (!validateCurrentStep()) return;
+ function goNext() {
+  if (!validateCurrentStep()) return;
 
-    setCurrentStep((step) => Math.min(step + 1, totalSteps - 1));
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
+  setMissingQuestionIds([]);
+  setValidationMessage("");
+  setCurrentStep((step) => Math.min(step + 1, totalSteps - 1));
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
 
   function goBack() {
     setValidationMessage("");
