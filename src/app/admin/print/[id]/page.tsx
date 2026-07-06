@@ -9,6 +9,7 @@ type Recommendation = {
   summary: string;
   recommendedForm: string;
   suggestedGoal: string;
+  verificationMethod: string;
 };
 
 function getPriority(average: number) {
@@ -46,6 +47,8 @@ function getRecommendationByCategory(
         "Interné metodické zaškolenie, praktický nácvik práce s IS Cygnus, kontrola vzorových zápisov a následná spätná väzba od vedúceho zamestnanca.",
       suggestedGoal:
         "Do nasledujúceho hodnotiaceho obdobia zlepšiť úplnosť, konkrétnosť a pravidelnosť záznamov v IS Cygnus tak, aby dokumentácia preukázateľne zachytávala priebeh, výsledky a dopad práce s PSS.",
+      verificationMethod:
+        "Vedúci úseku v spolupráci so zamestnancom vyhodnotí účinnosť a účelnosť prijatého opatrenia kontrolou vybraných záznamov v IS Cygnus a súvisiacej dokumentácie PSS. Overí sa najmä úplnosť, vecnosť, pravidelnosť zápisov, súlad s individuálnymi potrebami a cieľmi PSS a použiteľnosť záznamov ako odborného pracovného výstupu. Výsledok overenia sa zaznamená v hodnotiacom zázname alebo v podklade k individuálnemu plánu ďalšieho vzdelávania.",
     };
   }
 
@@ -67,6 +70,8 @@ function getRecommendationByCategory(
         "Vzdelávanie v oblasti komunikácie s klientom, modelové situácie, metodické vedenie a podľa potreby skupinová alebo individuálna supervízia.",
       suggestedGoal:
         "Do nasledujúceho hodnotiaceho obdobia posilniť partnerský, rešpektujúci a individuálny prístup v každodennej komunikácii s PSS.",
+      verificationMethod:
+        "Vedúci úseku v spolupráci so zamestnancom vyhodnotí prenos do praxe prostredníctvom hodnotiaceho rozhovoru, spätnej väzby z pracovného prostredia a posúdenia konkrétnych situácií pri práci s PSS. Overí sa najmä rešpektujúca komunikácia, individuálny prístup, dôstojnosť PSS a schopnosť zamestnanca používať získané poznatky v každodennej praxi.",
     };
   }
 
@@ -87,6 +92,8 @@ function getRecommendationByCategory(
         "Interné školenie alebo pracovné stretnutie k tímovej spolupráci, pravidlám komunikácie a odovzdávania informácií; pri pretrvávajúcich ťažkostiach skupinová supervízia.",
       suggestedGoal:
         "Do nasledujúceho hodnotiaceho obdobia zlepšiť spoluprácu s kolegami, včasné odovzdávanie dôležitých informácií a aktívne riešenie pracovných situácií v tíme.",
+      verificationMethod:
+        "Vedúci úseku vyhodnotí účelnosť prijatého opatrenia podľa reálneho pracovného výkonu zamestnanca, najmä podľa kvality spolupráce v tíme, včasnosti a úplnosti odovzdávania informácií, schopnosti riešiť pracovné situácie a spätnej väzby od nadriadeného alebo kolegov. Výsledok sa použije ako podklad pre ďalšie hodnotenie pracovného výkonu.",
     };
   }
 
@@ -108,6 +115,31 @@ function getRecommendationByCategory(
         "Vzdelávanie k štandardom kvality, interné metodické usmernenie, oboznámenie s odbornými postupmi a následné overenie prenosu poznatkov do praxe.",
       suggestedGoal:
         "Do nasledujúceho hodnotiaceho obdobia posilniť odborné a profesionálne vykonávanie pracovných činností v súlade so štandardmi kvality a internými postupmi zariadenia.",
+      verificationMethod:
+        "Vedúci úseku alebo manažér kvality overí prenos do praxe porovnaním pracovného výkonu zamestnanca s kartou pracovného miesta, internými postupmi, etickými požiadavkami a štandardmi kvality. Sleduje sa, či zamestnanec získané poznatky používa pri výkone práce a či sa premietli do kvality jeho výstupov. Výsledok overenia sa zaznamená ako podklad pre hodnotenie pracovného výkonu a ďalší plán vzdelávania.",
+    };
+  }
+
+  if (
+    normalized.includes("rehabilit") ||
+    normalized.includes("aktiv") ||
+    normalized.includes("cieľ") ||
+    normalized.includes("plán") ||
+    normalized.includes("voľnočas") ||
+    normalized.includes("schopnost")
+  ) {
+    return {
+      categoryName,
+      average,
+      priority,
+      summary:
+        "Zamestnanec dosiahol nižšie hodnotenie v oblasti sociálnej rehabilitácie, aktivizácie alebo práce s cieľmi prijímateľa sociálnej služby. Odporúča sa zamerať individuálny plán ďalšieho vzdelávania na aktivizáciu PSS, sociálnu rehabilitáciu, individuálne plánovanie a vyhodnocovanie osobných cieľov.",
+      recommendedForm:
+        "Metodické vedenie k individuálnemu plánovaniu, školenie k sociálnej rehabilitácii a praktické príklady práce s cieľmi PSS.",
+      suggestedGoal:
+        "Do nasledujúceho hodnotiaceho obdobia zlepšiť schopnosť plánovať, realizovať a vyhodnocovať aktivity tak, aby boli preukázateľne prepojené s individuálnymi potrebami a cieľmi PSS.",
+      verificationMethod:
+        "Vedúci úseku v spolupráci so zamestnancom vyhodnotí prenos do praxe kontrolou prepojenia realizovaných aktivít s individuálnymi potrebami a cieľmi PSS, posúdením záznamov v dokumentácii a vyhodnotením konkrétnych pracovných výstupov. Overí sa, či aktivity podporujú schopnosti, samostatnosť, aktivizáciu a kvalitu života PSS.",
     };
   }
 
@@ -121,11 +153,20 @@ function getRecommendationByCategory(
       "Individuálny hodnotiaci rozhovor, metodické vedenie najbližším nadriadeným a následné vyhodnotenie zlepšenia v ďalšom období.",
     suggestedGoal:
       "Do nasledujúceho hodnotiaceho obdobia prijať konkrétne opatrenie na zlepšenie tejto pracovnej oblasti a overiť jeho účinnosť v praxi.",
+    verificationMethod:
+      "Vedúci úseku v spolupráci so zamestnancom vyhodnotí účinnosť a účelnosť prijatého opatrenia pri najbližšom hodnotiacom rozhovore. Overenie sa vykoná porovnaním dohodnutého cieľa s reálnym pracovným výkonom, konkrétnymi pracovnými výstupmi a spätnou väzbou nadriadeného. Výsledok sa použije ako vstup do ďalšieho individuálneho plánu vzdelávania alebo ročného plánu vzdelávania.",
   };
 }
 
 function createTrainingRecommendations(
-  categoryStats: Record<string, { total: number; count: number; average: number }>
+  categoryStats: Record<
+    string,
+    {
+      total: number;
+      count: number;
+      average: number;
+    }
+  >
 ) {
   return Object.entries(categoryStats)
     .map(([categoryName, stats]) =>
@@ -238,10 +279,12 @@ export default async function PrintEmployeePage({
     ) || [];
 
   const positiveComments = getCommentsByType(employeeComments, "positive");
+
   const improvementComments = getCommentsByType(
     employeeComments,
     "improvement"
   );
+
   const trainingRecommendations = createTrainingRecommendations(categoryStats);
 
   return (
@@ -288,19 +331,21 @@ export default async function PrintEmployeePage({
 
           <tr>
             <td style={cellTitle}>Pracovná pozícia</td>
-            <td style={cellValue}>
-  {employee.positions?.[0]?.name || ""}
-</td>
+            <td style={cellValue}>{employee.positions?.[0]?.name || ""}</td>
           </tr>
 
           <tr>
             <td style={cellTitle}>Hodnotené obdobie</td>
-            <td style={cellValue}>............................................................</td>
+            <td style={cellValue}>
+              ............................................................
+            </td>
           </tr>
 
           <tr>
             <td style={cellTitle}>Dátum hodnotiaceho rozhovoru</td>
-            <td style={cellValue}>............................................................</td>
+            <td style={cellValue}>
+              ............................................................
+            </td>
           </tr>
 
           <tr>
@@ -389,6 +434,14 @@ export default async function PrintEmployeePage({
                   <strong>Odporúčaná forma podpory:</strong>{" "}
                   {recommendation.recommendedForm}
                 </p>
+
+                <p>
+                  <strong>
+                    Spôsob hodnotenia účelnosti, využiteľnosti a prenosu do
+                    praxe:
+                  </strong>{" "}
+                  {recommendation.verificationMethod}
+                </p>
               </div>
             )
           )}
@@ -415,144 +468,145 @@ export default async function PrintEmployeePage({
           )}
         </ul>
       ) : (
-        <p>....................................................................................................</p>
+        <p>
+          ....................................................................................................
+        </p>
       )}
 
       <h2 style={sectionTitle}>Dohodnuté osobné ciele zamestnanca</h2>
 
-<table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
-  <tbody>
-    <tr>
-      <td style={cellTitle}>Osobný cieľ č. 1</td>
-      <td style={cellValue}>
+      <table
+        style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}
+      >
+        <tbody>
+          <tr>
+            <td style={cellTitle}>Osobný cieľ č. 1</td>
+            <td style={cellValue}>
+              ....................................................................................................
+              <br />
+              ....................................................................................................
+            </td>
+          </tr>
+
+          <tr>
+            <td style={cellTitle}>Osobný cieľ č. 2</td>
+            <td style={cellValue}>
+              ....................................................................................................
+              <br />
+              ....................................................................................................
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2 style={sectionTitle}>Dohodnuté úlohy a opatrenia</h2>
+
+      <table
+        style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}
+      >
+        <thead>
+          <tr>
+            <th style={cellTitle}>Úloha / opatrenie</th>
+            <th style={cellTitle}>Zodpovedná osoba</th>
+            <th style={cellTitle}>Termín splnenia</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr>
+            <td style={cellValue}>
+              ....................................................................................
+              <br />
+              ....................................................................................
+            </td>
+            <td style={cellValue}>....................................</td>
+            <td style={cellValue}>....................................</td>
+          </tr>
+
+          <tr>
+            <td style={cellValue}>
+              ....................................................................................
+              <br />
+              ....................................................................................
+            </td>
+            <td style={cellValue}>....................................</td>
+            <td style={cellValue}>....................................</td>
+          </tr>
+
+          <tr>
+            <td style={cellValue}>
+              ....................................................................................
+              <br />
+              ....................................................................................
+            </td>
+            <td style={cellValue}>....................................</td>
+            <td style={cellValue}>....................................</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2 style={sectionTitle}>
+        Spôsob hodnotenia účelnosti, využiteľnosti a prenosu do praxe
+      </h2>
+
+      <table
+        style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}
+      >
+        <tbody>
+          <tr>
+            <td style={cellTitle}>Spôsob overenia</td>
+            <td style={cellValue}>
+              ☐ kontrola dokumentácie a záznamov v IS Cygnus
+              <br />
+              ☐ hodnotiaci rozhovor so zamestnancom
+              <br />
+              ☐ spätná väzba od vedúceho zamestnanca
+              <br />
+              ☐ posúdenie pracovných výstupov podľa karty pracovného miesta
+              <br />
+              ☐ vyhodnotenie splnenia osobného cieľa
+              <br />
+              ☐ individuálna alebo skupinová supervízia
+              <br />
+              ☐ iné:
+              ........................................................................................
+            </td>
+          </tr>
+
+          <tr>
+            <td style={cellTitle}>Termín vyhodnotenia</td>
+            <td style={cellValue}>
+              ............................................................
+            </td>
+          </tr>
+
+          <tr>
+            <td style={cellTitle}>Zodpovedná osoba za vyhodnotenie</td>
+            <td style={cellValue}>
+              ............................................................
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2 style={sectionTitle}>Vyhodnotenie prijatých opatrení</h2>
+
+      <div
+        style={{
+          border: "1px solid #000",
+          minHeight: "90px",
+          marginTop: "8px",
+          padding: "8px",
+        }}
+      >
         ....................................................................................................
         <br />
         ....................................................................................................
-      </td>
-    </tr>
-
-    <tr>
-      <td style={cellTitle}>Osobný cieľ č. 2</td>
-      <td style={cellValue}>
-        ....................................................................................................
         <br />
         ....................................................................................................
-      </td>
-    </tr>
-  </tbody>
-</table>
+      </div>
 
-<h2 style={sectionTitle}>Dohodnuté úlohy a opatrenia</h2>
-
-<table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
-  <thead>
-    <tr>
-      <th style={cellTitle}>Úloha / opatrenie</th>
-      <th style={cellTitle}>Zodpovedná osoba</th>
-      <th style={cellTitle}>Termín splnenia</th>
-    </tr>
-  </thead>
-
-  <tbody>
-    <tr>
-      <td style={cellValue}>
-        ....................................................................................
-        <br />
-        ....................................................................................
-      </td>
-      <td style={cellValue}>....................................</td>
-      <td style={cellValue}>....................................</td>
-    </tr>
-
-    <tr>
-      <td style={cellValue}>
-        ....................................................................................
-        <br />
-        ....................................................................................
-      </td>
-      <td style={cellValue}>....................................</td>
-      <td style={cellValue}>....................................</td>
-    </tr>
-
-    <tr>
-      <td style={cellValue}>
-        ....................................................................................
-        <br />
-        ....................................................................................
-      </td>
-      <td style={cellValue}>....................................</td>
-      <td style={cellValue}>....................................</td>
-    </tr>
-  </tbody>
-</table>
-
-<h2 style={sectionTitle}>Spôsob overenia zlepšenia / prenosu do praxe</h2>
-
-<table style={{ width: "100%", borderCollapse: "collapse", marginTop: "8px" }}>
-  <tbody>
-    <tr>
-      <td style={cellTitle}>Spôsob overenia</td>
-      <td style={cellValue}>
-        ☐ kontrola zápisov v IS Cygnus
-        <br />
-        ☐ spätná väzba od nadriadeného zamestnanca
-        <br />
-        ☐ pozorovanie pri práci s PSS
-        <br />
-        ☐ vyhodnotenie splnenia osobného cieľa
-        <br />
-        ☐ supervízia
-        <br />
-        ☐ iné:
-        ........................................................................................
-      </td>
-    </tr>
-
-    <tr>
-      <td style={cellTitle}>Termín vyhodnotenia</td>
-      <td style={cellValue}>............................................................</td>
-    </tr>
-
-    <tr>
-      <td style={cellTitle}>Zodpovedná osoba za vyhodnotenie</td>
-      <td style={cellValue}>............................................................</td>
-    </tr>
-  </tbody>
-</table>
-
-<h2 style={sectionTitle}>Vyhodnotenie prijatých opatrení</h2>
-
-<div
-  style={{
-    border: "1px solid #000",
-    minHeight: "90px",
-    marginTop: "8px",
-    padding: "8px",
-  }}
->
-  ....................................................................................................
-  <br />
-  ....................................................................................................
-  <br />
-  ....................................................................................................
-</div>
-
-<h2 style={sectionTitle}>Vyjadrenie zamestnanca</h2>
-
-<div
-  style={{
-    border: "1px solid #000",
-    minHeight: "90px",
-    marginTop: "8px",
-    padding: "8px",
-  }}
->
-  ....................................................................................................
-  <br />
-  ....................................................................................................
-  <br />
-  ....................................................................................................
-</div>
+      <h2 style={sectionTitle}>Vyjadrenie zamestnanca</h2>
 
       <div
         style={{
