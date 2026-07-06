@@ -2,7 +2,7 @@
 
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 
 export default function EvaluationForm({
   employeeId,
@@ -51,6 +51,10 @@ export default function EvaluationForm({
     totalQuestions > 0
       ? Math.round((answeredCount / totalQuestions) * 100)
       : 0;
+      useEffect(() => {
+  setMissingQuestionIds([]);
+  setValidationMessage("");
+}, [currentStep]);
 
   function validateCurrentStep() {
     if (!currentGroup) {
