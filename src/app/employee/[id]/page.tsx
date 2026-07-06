@@ -17,10 +17,19 @@ export default async function EmployeePage({ params }: Props) {
 
   if (!employee) notFound();
 
+  if (!employee.department_id) {
+    return (
+      <main className="max-w-3xl mx-auto p-8">
+        Zamestnanec nemá priradený úsek. Skontroluj nastavenie v databáze.
+      </main>
+    );
+  }
+
   const { data: questions } = await supabase
     .from("evaluation_questions")
     .select(`id, question, evaluation_categories(name)`)
     .eq("is_active", true)
+    .eq("department_id", employee.department_id)
     .order("sort_order");
 
   const { data: period } = await supabase
@@ -37,32 +46,38 @@ export default async function EmployeePage({ params }: Props) {
     );
   }
 
-  return (
-  <main className="max-w-3xl mx-auto p-8">
-    <div className="mb-8 flex justify-center">
-      <img
-        src="/logo-svida.jpg"
-        alt="Senior dom Svida"
-        className="h-24 w-auto"
-      />
-    </div>
+  if (!questions || questions.length === 0) {
+    return (
+      <main className="max-w-3xl mx-auto p-8">
+        Pre úsek zamestnanca zatiaľ nie sú nastavené hodnotiace otázky.
+      </main>
+    );
+  }
 
-    <h1 className="text-4xl font-bold">
-      {employee.first_name} {employee.last_name}
-    </h1>
+  return (
+    <main className="max-w-3xl mx-auto p-8">
+      <div className="mb-8 flex justify-center">
+        <img
+          src="/logo-svida.jpg"
+          alt="Senior dom Svida"
+          className="h-24 w-auto"
+        />
+      </div>
+
+      <h1 className="text-4xl font-bold">
+        {employee.first_name} {employee.last_name}
+      </h1>
 
       <p className="text-gray-500 mt-2">
         {(employee.departments as any)?.name}
       </p>
 
-      <p className="text-gray-500">
-        {(employee.positions as any)?.name}
-      </p>
+      <p className="text-gray-500">{(employee.positions as any)?.name}</p>
 
       <EvaluationForm
         employeeId={employee.id}
         periodId={period.id}
-        questions={questions || []}
+        questions={questions}
       />
     </main>
   );
