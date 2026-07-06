@@ -25,12 +25,22 @@ export default async function EmployeePage({ params }: Props) {
     );
   }
 
-  const { data: questions } = await supabase
+  const query = supabase
     .from("evaluation_questions")
     .select(`id, question, evaluation_categories(name)`)
     .eq("is_active", true)
     .eq("department_id", employee.department_id)
     .order("sort_order");
+
+  const { data: allDepartmentQuestions } = await query;
+
+  const questions = (allDepartmentQuestions || []).filter((question: any) => {
+    if (!question.position_id) {
+      return true;
+    }
+
+    return question.position_id === employee.position_id;
+  });
 
   const { data: period } = await supabase
     .from("evaluation_periods")
@@ -49,7 +59,8 @@ export default async function EmployeePage({ params }: Props) {
   if (!questions || questions.length === 0) {
     return (
       <main className="max-w-3xl mx-auto p-8">
-        Pre úsek zamestnanca zatiaľ nie sú nastavené hodnotiace otázky.
+        Pre úsek a pracovnú pozíciu zamestnanca zatiaľ nie sú nastavené
+        hodnotiace otázky.
       </main>
     );
   }
