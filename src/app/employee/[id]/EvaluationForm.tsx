@@ -42,9 +42,7 @@ export default function EvaluationForm({
     }));
   }, [questions]);
 
-  const totalQuestionSteps = groupedQuestions.length;
-  const commentsStepIndex = totalQuestionSteps;
-  const totalSteps = totalQuestionSteps + 1;
+  const totalSteps = groupedQuestions.length;
   const currentGroup = groupedQuestions[currentStep];
 
   const answeredCount = Object.keys(answers).length;
@@ -55,7 +53,7 @@ export default function EvaluationForm({
       : 0;
 
   function validateCurrentStep() {
-    if (currentStep >= totalQuestionSteps || !currentGroup) {
+    if (!currentGroup) {
       return true;
     }
 
@@ -66,6 +64,14 @@ export default function EvaluationForm({
     if (missing.length > 0) {
       setMissingQuestionIds(missing);
       setValidationMessage("Vyplňte všetky otázky v tejto oblasti.");
+
+      setTimeout(() => {
+        document.getElementById(`question-${missing[0]}`)?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
+      }, 100);
+
       return false;
     }
 
@@ -104,11 +110,10 @@ export default function EvaluationForm({
       return;
     }
 
-    const formData = new FormData(e.currentTarget);
-    await handleSubmit(formData);
+    await handleSubmit();
   }
 
-  async function handleSubmit(formData: FormData) {
+  async function handleSubmit() {
     setLoading(true);
 
     const votingCodeId = localStorage.getItem("voting_code_id");
@@ -164,39 +169,6 @@ export default function EvaluationForm({
       alert(answersError.message || "Odpovede sa nepodarilo uložiť.");
       setLoading(false);
       return;
-    }
-
-    const comments = [
-      {
-        type: "positive",
-        text: String(formData.get("positive_comment") || "").trim(),
-      },
-      {
-        type: "improvement",
-        text: String(formData.get("improvement_comment") || "").trim(),
-      },
-      {
-        type: "example",
-        text: String(formData.get("example_comment") || "").trim(),
-      },
-    ]
-      .filter((comment) => comment.text)
-      .map((comment) => ({
-        evaluation_id: evaluation.id,
-        comment_type: comment.type,
-        comment_text: comment.text,
-      }));
-
-    if (comments.length > 0) {
-      const { error: commentsError } = await supabase
-        .from("evaluation_comments")
-        .insert(comments);
-
-      if (commentsError) {
-        alert(commentsError.message || "Komentáre sa nepodarilo uložiť.");
-        setLoading(false);
-        return;
-      }
     }
 
     const { error: usageError } = await supabase
@@ -280,6 +252,56 @@ export default function EvaluationForm({
         </div>
       </div>
 
+      <div className="rounded-xl p-6 svida-info-box">
+        <h2 className="text-2xl font-bold mb-5 svida-info-title">
+          Ako hodnotiť
+        </h2>
+
+        <div className="space-y-3 text-lg text-gray-700">
+          <p>
+            <strong>1</strong> = vôbec nesúhlasím
+          </p>
+          <p>
+            <strong>2</strong> = skôr nesúhlasím
+          </p>
+          <p>
+            <strong>3</strong> = neviem posúdiť / čiastočne
+          </p>
+          <p>
+            <strong>4</strong> = skôr súhlasím
+          </p>
+          <p>
+            <strong>5</strong> = úplne súhlasím
+          </p>
+        </div>
+
+        <p className="mt-6 text-base text-gray-700">
+          Všetky otázky sú povinné.
+        </p>
+      </div>
+
+      <div className="rounded-xl p-6 svida-anonymity-box">
+        <h2 className="text-2xl font-bold svida-anonymity-title mb-5">
+          Anonymita hodnotenia
+        </h2>
+
+        <div className="space-y-4 text-lg leading-relaxed svida-anonymity-text">
+          <p>
+            Hodnotenie je anonymné. V systéme sa neeviduje meno hodnotiacej
+            osoby.
+          </p>
+
+          <p>
+            Anonymný kód slúži iba na overenie prístupu a na zabezpečenie toho,
+            aby jeden zamestnanec nehodnotil toho istého pracovníka opakovane.
+          </p>
+
+          <p>
+            Každý anonymný kód môže ohodnotiť konkrétneho zamestnanca iba raz.
+          </p>
+        </div>
+      </div>
+
       {validationMessage && (
         <div className="rounded-xl border border-red-400 bg-red-50 p-5 text-red-800">
           <p className="text-xl font-bold">Formulár nie je úplne vyplnený</p>
@@ -289,11 +311,11 @@ export default function EvaluationForm({
         </div>
       )}
 
-      {currentStep < totalQuestionSteps && currentGroup && (
+      {currentGroup && (
         <section className="space-y-5">
           <div className="rounded-xl bg-gray-100 p-5">
             <p className="text-sm font-semibold text-gray-500">
-              Oblasť {currentStep + 1} z {totalQuestionSteps}
+              Oblasť {currentStep + 1} z {totalSteps}
             </p>
 
             <h2 className="mt-1 text-2xl font-bold text-gray-900">
@@ -322,13 +344,13 @@ export default function EvaluationForm({
                   Otázka {index + 1} z {currentGroup.questions.length}
                 </p>
 
-                <h3 className="text-xl font-semibold mb-5">
+                <h2 className="text-xl font-semibold mb-5">
                   {question.question} <span className="text-red-600">*</span>
-                </h3>
+                </h2>
 
                 {isMissing && (
                   <p className="mb-4 rounded-lg bg-red-100 px-4 py-3 text-base font-semibold text-red-700">
-                    Túto otázku je potrebné vyplniť.
+                    Túto povinnú otázku ste ešte nevyplnili.
                   </p>
                 )}
 
@@ -360,66 +382,13 @@ export default function EvaluationForm({
                     </label>
                   ))}
                 </div>
+
+                <p className="mt-3 text-sm text-gray-500">
+                  Vyberte jednu odpoveď od 1 do 5.
+                </p>
               </div>
             );
           })}
-        </section>
-      )}
-
-      {currentStep === commentsStepIndex && (
-        <section className="space-y-5">
-          <div className="rounded-xl bg-gray-100 p-5">
-            <p className="text-sm font-semibold text-gray-500">
-              Záverečný krok
-            </p>
-
-            <h2 className="mt-1 text-2xl font-bold text-gray-900">
-              Slovné hodnotenie
-            </h2>
-
-            <p className="mt-2 text-gray-600">
-              Textové odpovede sú nepovinné.
-            </p>
-          </div>
-
-          <div className="rounded-xl border p-6 bg-white">
-            <label className="font-semibold block mb-3 text-lg">
-              Čo tento zamestnanec robí podľa vás veľmi dobre?
-            </label>
-
-            <textarea
-              name="positive_comment"
-              rows={4}
-              className="w-full border rounded-lg p-3 text-base"
-              placeholder="Napíšte konkrétne silné stránky..."
-            />
-          </div>
-
-          <div className="rounded-xl border p-6 bg-white">
-            <label className="font-semibold block mb-3 text-lg">
-              V čom by sa tento zamestnanec mohol zlepšiť?
-            </label>
-
-            <textarea
-              name="improvement_comment"
-              rows={4}
-              className="w-full border rounded-lg p-3 text-base"
-              placeholder="Napíšte návrhy na zlepšenie..."
-            />
-          </div>
-
-          <div className="rounded-xl border p-6 bg-white">
-            <label className="font-semibold block mb-3 text-lg">
-              Máte konkrétny príklad situácie?
-            </label>
-
-            <textarea
-              name="example_comment"
-              rows={4}
-              className="w-full border rounded-lg p-3 text-base"
-              placeholder="Opíšte konkrétnu situáciu, ak ju poznáte..."
-            />
-          </div>
         </section>
       )}
 
@@ -433,7 +402,7 @@ export default function EvaluationForm({
           Späť
         </button>
 
-        {currentStep < commentsStepIndex ? (
+        {currentStep < totalSteps - 1 ? (
           <button
             type="button"
             onClick={goNext}
