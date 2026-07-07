@@ -21,6 +21,7 @@ export default function EvaluationForm({
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [missingQuestionIds, setMissingQuestionIds] = useState<string[]>([]);
   const [validationMessage, setValidationMessage] = useState("");
+  const [errorStep, setErrorStep] = useState<number | null>(null);
 
   const groupedQuestions = useMemo(() => {
     const groups: Record<string, any[]> = {};
@@ -66,8 +67,9 @@ export default function EvaluationForm({
       .map((question) => question.id);
 
     if (missing.length > 0) {
-      setMissingQuestionIds(missing);
-      setValidationMessage("Vyplňte všetky otázky v tejto oblasti.");
+  setMissingQuestionIds(missing);
+  setValidationMessage("Vyplňte všetky otázky v tejto oblasti.");
+  setErrorStep(currentStep);
 
       setTimeout(() => {
         document.getElementById(`question-${missing[0]}`)?.scrollIntoView({
@@ -79,25 +81,29 @@ export default function EvaluationForm({
       return false;
     }
 
-    setMissingQuestionIds([]);
-    setValidationMessage("");
-    return true;
-  }
+   setMissingQuestionIds([]);
+setValidationMessage("");
+setErrorStep(null);
+return true;
 
- function goNext() {
+function goNext() {
   if (!validateCurrentStep()) return;
 
   setMissingQuestionIds([]);
   setValidationMessage("");
+  setErrorStep(null);
   setCurrentStep((step) => Math.min(step + 1, totalSteps - 1));
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
+}
 
-  function goBack() {
-    setValidationMessage("");
-    setMissingQuestionIds([]);
-    setCurrentStep((step) => Math.max(step - 1, 0));
-    window.scrollTo({ top: 0, behavior: "smooth" });
+ function goBack() {
+  setMissingQuestionIds([]);
+  setValidationMessage("");
+  setErrorStep(null);
+  setCurrentStep((step) => Math.max(step - 1, 0));
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
   }
 
   async function handleFormSubmit(e: FormEvent<HTMLFormElement>) {
@@ -308,7 +314,7 @@ export default function EvaluationForm({
         </div>
       </div>
 
-      {validationMessage && (
+      {validationMessage && errorStep === currentStep && (
         <div className="rounded-xl border border-red-400 bg-red-50 p-5 text-red-800">
           <p className="text-xl font-bold">Formulár nie je úplne vyplnený</p>
           <p className="mt-2 text-base leading-relaxed">
@@ -334,7 +340,8 @@ export default function EvaluationForm({
           </div>
 
           {currentGroup.questions.map((question, index) => {
-            const isMissing = missingQuestionIds.includes(question.id);
+            const isMissing =
+  errorStep === currentStep && missingQuestionIds.includes(question.id);
 
             return (
               <div
@@ -361,20 +368,36 @@ export default function EvaluationForm({
                 )}
 
                 <div className="grid grid-cols-5 gap-3">
-                  {[1, 2, 3, 4, 5].map((score) => (
-                    <label key={score} className="cursor-pointer">
-                      <input
-                        type="radio"
-                        name={question.id}
-                        value={score}
-                        checked={answers[question.id] === String(score)}
-                        required
-                        className="peer sr-only"
-                        onChange={() => {
-                          setAnswers((current) => ({
-                            ...current,
-                            [question.id]: String(score),
-                          }));
+  {[1, 2, 3, 4, 5].map((score) => (
+    <label key={score} className="cursor-pointer">
+      <input
+        type="radio"
+        name={question.id}
+        value={score}
+        checked={answers[question.id] === String(score)}
+        required
+        className="peer sr-only"
+        onChange={() => {
+          setAnswers((current) => ({
+            ...current,
+            [question.id]: String(score),
+          }));
+
+          setMissingQuestionIds((current) =>
+            current.filter((id) => id !== question.id)
+          );
+
+          setErrorStep(null);
+          setValidationMessage("");
+        }}
+      />
+
+      <span className="flex h-14 items-center justify-center rounded-xl border border-gray-300 bg-white text-xl font-bold text-gray-700 transition peer-checked:border-[#df4a33] peer-checked:bg-[#df4a33] peer-checked:text-white hover:border-[#df4a33]">
+        {score}
+      </span>
+    </label>
+  ))}
+</div>
 
                           setMissingQuestionIds((current) =>
                             current.filter((id) => id !== question.id)
