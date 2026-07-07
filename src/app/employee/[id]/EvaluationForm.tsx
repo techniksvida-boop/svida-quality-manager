@@ -396,9 +396,17 @@ export default function EvaluationForm({
                   ))}
                 </div>
 
-                <p className="mt-3 text-sm text-gray-500">
-                  Vyberte jednu odpoveď od 1 do 5.
-                </p>
+                <div className="mt-3 grid grid-cols-3 gap-2 text-xs text-gray-500">
+  <div className="text-left">
+    <strong>1</strong> = vôbec nesúhlasím
+  </div>
+  <div className="text-center">
+    <strong>3</strong> = neviem posúdiť / čiastočne
+  </div>
+  <div className="text-right">
+    <strong>5</strong> = úplne súhlasím
+  </div>
+</div>
               </div>
             );
           })}
