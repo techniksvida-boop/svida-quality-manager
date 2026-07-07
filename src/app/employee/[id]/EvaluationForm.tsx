@@ -22,6 +22,7 @@ export default function EvaluationForm({
   const [missingQuestionIds, setMissingQuestionIds] = useState<string[]>([]);
   const [validationMessage, setValidationMessage] = useState("");
   const [errorStep, setErrorStep] = useState<number | null>(null);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   const groupedQuestions = useMemo(() => {
     const groups: Record<string, any[]> = {};
@@ -93,13 +94,18 @@ export default function EvaluationForm({
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  function goBack() {
-    setMissingQuestionIds([]);
-    setValidationMessage("");
-    setErrorStep(null);
-    setCurrentStep((step) => Math.max(step - 1, 0));
+ function goBack() {
+  setIsNavigating(true);
+  setMissingQuestionIds([]);
+  setValidationMessage("");
+  setErrorStep(null);
+  setCurrentStep((step) => Math.max(step - 1, 0));
+
+  requestAnimationFrame(() => {
+    setIsNavigating(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }
+  });
+}
 
   async function handleFormSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -310,7 +316,7 @@ export default function EvaluationForm({
         </div>
       </div>
 
-      {validationMessage && errorStep === currentStep && (
+      {!isNavigating && validationMessage && errorStep === currentStep && (
         <div className="rounded-xl border border-red-400 bg-red-50 p-5 text-red-800">
           <p className="text-xl font-bold">Formulár nie je úplne vyplnený</p>
           <p className="mt-2 text-base leading-relaxed">
@@ -337,8 +343,9 @@ export default function EvaluationForm({
 
           {currentGroup.questions.map((question, index) => {
             const isMissing =
-              errorStep === currentStep &&
-              missingQuestionIds.includes(question.id);
+  !isNavigating &&
+  errorStep === currentStep &&
+  missingQuestionIds.includes(question.id);
 
             return (
               <div
