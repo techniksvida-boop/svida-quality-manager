@@ -378,27 +378,48 @@ export default function EvaluationForm({
     setSent(true);
   }
 
-  if (sent) {
-    return (
-      <div className="mt-10 rounded-xl p-6 svida-anonymity-box">
-        <h2 className="text-2xl font-bold svida-anonymity-title">
-          Hodnotenie bolo úspešne odoslané.
-        </h2>
+ if (sent) {
+  return (
+    <div className="mt-10">
+      <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-8 shadow-sm">
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-3xl text-emerald-700">
+          ✓
+        </div>
 
-        <p className="mt-3 text-lg leading-relaxed svida-anonymity-text">
-          Ďakujeme. Tohto zamestnanca už pod týmto anonymným kódom nebude možné
-          hodnotiť znova.
-        </p>
+        <div className="mt-6 text-center">
+          <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">
+            Hodnotenie odoslané
+          </p>
 
-        <a
-          href="/hodnotenie"
-          className="mt-6 inline-block rounded-xl px-5 py-3 font-semibold svida-btn"
-        >
-          Pokračovať na ďalších zamestnancov
-        </a>
+          <h2 className="mt-2 text-3xl font-bold text-emerald-950">
+            Ďakujeme za vyplnenie hodnotenia
+          </h2>
+
+          <p className="mx-auto mt-4 max-w-2xl text-lg leading-relaxed text-emerald-900/80">
+            Hodnotenie bolo úspešne uložené. Tohto zamestnanca už pod týmto
+            anonymným kódom nie je možné hodnotiť opakovane.
+          </p>
+        </div>
+
+        <div className="mt-8 grid gap-4 md:grid-cols-2">
+          <a
+            href="/hodnotenie"
+            className="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-6 py-4 text-lg font-semibold text-white transition hover:bg-emerald-700"
+          >
+            Pokračovať na ďalších zamestnancov
+          </a>
+
+          <a
+            href="/start"
+            className="inline-flex items-center justify-center rounded-2xl border border-emerald-300 bg-white px-6 py-4 text-lg font-semibold text-emerald-800 transition hover:bg-emerald-100"
+          >
+            Späť na úvod
+          </a>
+        </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
 
   return (
     <form onSubmit={handleFormSubmit} noValidate className="mt-10 space-y-8">
