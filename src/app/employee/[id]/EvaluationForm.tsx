@@ -367,7 +367,7 @@ function goNext() {
                   </p>
                 )}
 
-                <div className="grid grid-cols-5 gap-3">
+               <div className="grid grid-cols-5 gap-3">
   {[1, 2, 3, 4, 5].map((score) => (
     <label key={score} className="cursor-pointer">
       <input
