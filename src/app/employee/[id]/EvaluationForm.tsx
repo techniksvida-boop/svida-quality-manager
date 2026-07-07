@@ -2,7 +2,7 @@
 
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 
 export default function EvaluationForm({
   employeeId,
@@ -52,10 +52,6 @@ export default function EvaluationForm({
     totalQuestions > 0
       ? Math.round((answeredCount / totalQuestions) * 100)
       : 0;
-      useEffect(() => {
-  setMissingQuestionIds([]);
-  setValidationMessage("");
-}, [currentStep]);
 
   function validateCurrentStep() {
     if (!currentGroup) {
@@ -67,9 +63,9 @@ export default function EvaluationForm({
       .map((question) => question.id);
 
     if (missing.length > 0) {
-  setMissingQuestionIds(missing);
-  setValidationMessage("Vyplňte všetky otázky v tejto oblasti.");
-  setErrorStep(currentStep);
+      setMissingQuestionIds(missing);
+      setValidationMessage("Vyplňte všetky otázky v tejto oblasti.");
+      setErrorStep(currentStep);
 
       setTimeout(() => {
         document.getElementById(`question-${missing[0]}`)?.scrollIntoView({
@@ -81,29 +77,28 @@ export default function EvaluationForm({
       return false;
     }
 
-   setMissingQuestionIds([]);
-setValidationMessage("");
-setErrorStep(null);
-return true;
+    setMissingQuestionIds([]);
+    setValidationMessage("");
+    setErrorStep(null);
+    return true;
+  }
 
-function goNext() {
-  if (!validateCurrentStep()) return;
+  function goNext() {
+    if (!validateCurrentStep()) return;
 
-  setMissingQuestionIds([]);
-  setValidationMessage("");
-  setErrorStep(null);
-  setCurrentStep((step) => Math.min(step + 1, totalSteps - 1));
-  window.scrollTo({ top: 0, behavior: "smooth" });
-}
-}
+    setMissingQuestionIds([]);
+    setValidationMessage("");
+    setErrorStep(null);
+    setCurrentStep((step) => Math.min(step + 1, totalSteps - 1));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
- function goBack() {
-  setMissingQuestionIds([]);
-  setValidationMessage("");
-  setErrorStep(null);
-  setCurrentStep((step) => Math.max(step - 1, 0));
-  window.scrollTo({ top: 0, behavior: "smooth" });
-}
+  function goBack() {
+    setMissingQuestionIds([]);
+    setValidationMessage("");
+    setErrorStep(null);
+    setCurrentStep((step) => Math.max(step - 1, 0));
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   async function handleFormSubmit(e: FormEvent<HTMLFormElement>) {
@@ -118,6 +113,7 @@ function goNext() {
     if (missing.length > 0) {
       setMissingQuestionIds(missing);
       setValidationMessage("Nie sú vyplnené všetky povinné otázky.");
+      setErrorStep(0);
       setCurrentStep(0);
       return;
     }
@@ -341,7 +337,8 @@ function goNext() {
 
           {currentGroup.questions.map((question, index) => {
             const isMissing =
-  errorStep === currentStep && missingQuestionIds.includes(question.id);
+              errorStep === currentStep &&
+              missingQuestionIds.includes(question.id);
 
             return (
               <div
@@ -367,41 +364,28 @@ function goNext() {
                   </p>
                 )}
 
-               <div className="grid grid-cols-5 gap-3">
-  {[1, 2, 3, 4, 5].map((score) => (
-    <label key={score} className="cursor-pointer">
-      <input
-        type="radio"
-        name={question.id}
-        value={score}
-        checked={answers[question.id] === String(score)}
-        required
-        className="peer sr-only"
-        onChange={() => {
-          setAnswers((current) => ({
-            ...current,
-            [question.id]: String(score),
-          }));
-
-          setMissingQuestionIds((current) =>
-            current.filter((id) => id !== question.id)
-          );
-
-          setErrorStep(null);
-          setValidationMessage("");
-        }}
-      />
-
-      <span className="flex h-14 items-center justify-center rounded-xl border border-gray-300 bg-white text-xl font-bold text-gray-700 transition peer-checked:border-[#df4a33] peer-checked:bg-[#df4a33] peer-checked:text-white hover:border-[#df4a33]">
-        {score}
-      </span>
-    </label>
-  ))}
-</div>
+                <div className="grid grid-cols-5 gap-3">
+                  {[1, 2, 3, 4, 5].map((score) => (
+                    <label key={score} className="cursor-pointer">
+                      <input
+                        type="radio"
+                        name={question.id}
+                        value={score}
+                        checked={answers[question.id] === String(score)}
+                        required
+                        className="peer sr-only"
+                        onChange={() => {
+                          setAnswers((current) => ({
+                            ...current,
+                            [question.id]: String(score),
+                          }));
 
                           setMissingQuestionIds((current) =>
                             current.filter((id) => id !== question.id)
                           );
+
+                          setErrorStep(null);
+                          setValidationMessage("");
                         }}
                       />
 
