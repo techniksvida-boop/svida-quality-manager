@@ -2,7 +2,7 @@
 
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 
 export default function EvaluationForm({
   employeeId,
@@ -22,7 +22,6 @@ export default function EvaluationForm({
   const [missingQuestionIds, setMissingQuestionIds] = useState<string[]>([]);
   const [validationMessage, setValidationMessage] = useState("");
   const [errorStep, setErrorStep] = useState<number | null>(null);
-  const [isNavigating, setIsNavigating] = useState(false);
 
   const groupedQuestions = useMemo(() => {
     const groups: Record<string, any[]> = {};
@@ -47,19 +46,12 @@ export default function EvaluationForm({
   const totalSteps = groupedQuestions.length;
   const currentGroup = groupedQuestions[currentStep];
 
- const answeredCount = Object.keys(answers).length;
-const totalQuestions = questions.length;
-const progress =
-  totalQuestions > 0
-    ? Math.round((answeredCount / totalQuestions) * 100)
-    : 0;
-
-useEffect(() => {
-  setMissingQuestionIds([]);
-  setValidationMessage("");
-  setErrorStep(null);
-  setIsNavigating(false);
-}, [currentStep]);
+  const answeredCount = Object.keys(answers).length;
+  const totalQuestions = questions.length;
+  const progress =
+    totalQuestions > 0
+      ? Math.round((answeredCount / totalQuestions) * 100)
+      : 0;
 
   function validateCurrentStep() {
     if (!currentGroup) {
@@ -101,18 +93,13 @@ useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
- function goBack() {
-  setIsNavigating(true);
-  setMissingQuestionIds([]);
-  setValidationMessage("");
-  setErrorStep(null);
-  setCurrentStep((step) => Math.max(step - 1, 0));
-
-  requestAnimationFrame(() => {
-    setIsNavigating(false);
+  function goBack() {
+    setMissingQuestionIds([]);
+    setValidationMessage("");
+    setErrorStep(null);
+    setCurrentStep((step) => Math.max(step - 1, 0));
     window.scrollTo({ top: 0, behavior: "smooth" });
-  });
-}
+  }
 
   async function handleFormSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -323,7 +310,7 @@ useEffect(() => {
         </div>
       </div>
 
-      {!isNavigating && validationMessage && errorStep === currentStep && (
+      {validationMessage && errorStep === currentStep && (
         <div className="rounded-xl border border-red-400 bg-red-50 p-5 text-red-800">
           <p className="text-xl font-bold">Formulár nie je úplne vyplnený</p>
           <p className="mt-2 text-base leading-relaxed">
@@ -350,9 +337,8 @@ useEffect(() => {
 
           {currentGroup.questions.map((question, index) => {
             const isMissing =
-  !isNavigating &&
-  errorStep === currentStep &&
-  missingQuestionIds.includes(question.id);
+              errorStep === currentStep &&
+              missingQuestionIds.includes(question.id);
 
             return (
               <div
