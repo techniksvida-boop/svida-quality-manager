@@ -421,55 +421,59 @@ export default function EvaluationForm({
         </div>
       </div>
 
-      <div className="rounded-xl p-6 svida-info-box">
-        <h2 className="text-2xl font-bold mb-5 svida-info-title">
-          Ako hodnotiť
-        </h2>
+      {currentStep === 0 && (
+  <>
+    <div className="rounded-xl p-6 svida-info-box">
+      <h2 className="text-2xl font-bold mb-5 svida-info-title">
+        Ako hodnotiť
+      </h2>
 
-        <div className="space-y-3 text-lg text-gray-700">
-          <p>
-            <strong>1</strong> = vôbec nesúhlasím
-          </p>
-          <p>
-            <strong>2</strong> = skôr nesúhlasím
-          </p>
-          <p>
-            <strong>3</strong> = neviem posúdiť / čiastočne
-          </p>
-          <p>
-            <strong>4</strong> = skôr súhlasím
-          </p>
-          <p>
-            <strong>5</strong> = úplne súhlasím
-          </p>
-        </div>
-
-        <p className="mt-6 text-base text-gray-700">
-          Všetky otázky sú povinné.
+      <div className="space-y-3 text-lg text-gray-700">
+        <p>
+          <strong>1</strong> = vôbec nesúhlasím
+        </p>
+        <p>
+          <strong>2</strong> = skôr nesúhlasím
+        </p>
+        <p>
+          <strong>3</strong> = neviem posúdiť / čiastočne
+        </p>
+        <p>
+          <strong>4</strong> = skôr súhlasím
+        </p>
+        <p>
+          <strong>5</strong> = úplne súhlasím
         </p>
       </div>
 
-      <div className="rounded-xl p-6 svida-anonymity-box">
-        <h2 className="text-2xl font-bold svida-anonymity-title mb-5">
-          Anonymita hodnotenia
-        </h2>
+      <p className="mt-6 text-base text-gray-700">
+        Všetky otázky sú povinné.
+      </p>
+    </div>
 
-        <div className="space-y-4 text-lg leading-relaxed svida-anonymity-text">
-          <p>
-            Hodnotenie je anonymné. V systéme sa neeviduje meno hodnotiacej
-            osoby.
-          </p>
+    <div className="rounded-xl p-6 svida-anonymity-box">
+      <h2 className="text-2xl font-bold svida-anonymity-title mb-5">
+        Anonymita hodnotenia
+      </h2>
 
-          <p>
-            Anonymný kód slúži iba na overenie prístupu a na zabezpečenie toho,
-            aby jeden zamestnanec nehodnotil toho istého pracovníka opakovane.
-          </p>
+      <div className="space-y-4 text-lg leading-relaxed svida-anonymity-text">
+        <p>
+          Hodnotenie je anonymné. V systéme sa neeviduje meno hodnotiacej
+          osoby.
+        </p>
 
-          <p>
-            Každý anonymný kód môže ohodnotiť konkrétneho zamestnanca iba raz.
-          </p>
-        </div>
+        <p>
+          Anonymný kód slúži iba na overenie prístupu a na zabezpečenie toho,
+          aby jeden zamestnanec nehodnotil toho istého pracovníka opakovane.
+        </p>
+
+        <p>
+          Každý anonymný kód môže ohodnotiť konkrétneho zamestnanca iba raz.
+        </p>
       </div>
+    </div>
+  </>
+)}
 
       {validationMessage && errorStep === currentStep && (
         <div className="rounded-xl border border-red-400 bg-red-50 p-5 text-red-800">
