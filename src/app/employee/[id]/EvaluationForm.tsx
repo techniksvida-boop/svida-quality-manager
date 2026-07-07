@@ -23,7 +23,8 @@ const CATEGORY_STYLES: Record<
     hoverClass: "hover:border-blue-400",
   },
   "Kvalita a spoľahlivosť práce": {
-    description: "Hodnotenie presnosti, spoľahlivosti a kvality vykonávanej práce.",
+    description:
+      "Hodnotenie presnosti, spoľahlivosti a kvality vykonávanej práce.",
     headerClass: "bg-sky-50 border border-sky-200",
     cardClass: "border-sky-100 bg-sky-50/40",
     selectedClass:
@@ -31,7 +32,8 @@ const CATEGORY_STYLES: Record<
     hoverClass: "hover:border-sky-400",
   },
   "Práca s klientom": {
-    description: "Hodnotenie prístupu ku klientovi a kvality kontaktu s klientom.",
+    description:
+      "Hodnotenie prístupu ku klientovi a kvality kontaktu s klientom.",
     headerClass: "bg-emerald-50 border border-emerald-200",
     cardClass: "border-emerald-100 bg-emerald-50/40",
     selectedClass:
@@ -39,7 +41,8 @@ const CATEGORY_STYLES: Record<
     hoverClass: "hover:border-emerald-400",
   },
   "Komunikácia a spolupráca": {
-    description: "Hodnotenie komunikácie, tímovej spolupráce a odovzdávania informácií.",
+    description:
+      "Hodnotenie komunikácie, tímovej spolupráce a odovzdávania informácií.",
     headerClass: "bg-violet-50 border border-violet-200",
     cardClass: "border-violet-100 bg-violet-50/40",
     selectedClass:
@@ -47,7 +50,8 @@ const CATEGORY_STYLES: Record<
     hoverClass: "hover:border-violet-400",
   },
   Komunikácia: {
-    description: "Hodnotenie zrozumiteľnej, slušnej a profesionálnej komunikácie.",
+    description:
+      "Hodnotenie zrozumiteľnej, slušnej a profesionálnej komunikácie.",
     headerClass: "bg-fuchsia-50 border border-fuchsia-200",
     cardClass: "border-fuchsia-100 bg-fuchsia-50/40",
     selectedClass:
@@ -55,7 +59,8 @@ const CATEGORY_STYLES: Record<
     hoverClass: "hover:border-fuchsia-400",
   },
   "Dodržiavanie pracovných a prevádzkových postupov": {
-    description: "Hodnotenie dodržiavania interných pravidiel, postupov a organizácie práce.",
+    description:
+      "Hodnotenie dodržiavania interných pravidiel, postupov a organizácie práce.",
     headerClass: "bg-cyan-50 border border-cyan-200",
     cardClass: "border-cyan-100 bg-cyan-50/40",
     selectedClass:
@@ -63,7 +68,8 @@ const CATEGORY_STYLES: Record<
     hoverClass: "hover:border-cyan-400",
   },
   "Bezpečnosť práce a hospodárnosť": {
-    description: "Hodnotenie bezpečnosti, hygieny a hospodárneho nakladania s prostriedkami.",
+    description:
+      "Hodnotenie bezpečnosti, hygieny a hospodárneho nakladania s prostriedkami.",
     headerClass: "bg-amber-50 border border-amber-200",
     cardClass: "border-amber-100 bg-amber-50/40",
     selectedClass:
@@ -87,7 +93,8 @@ const CATEGORY_STYLES: Record<
     hoverClass: "hover:border-blue-400",
   },
   "Prístup ku klientovi": {
-    description: "Hodnotenie rešpektu, dôstojnosti a primeraného prístupu ku klientovi.",
+    description:
+      "Hodnotenie rešpektu, dôstojnosti a primeraného prístupu ku klientovi.",
     headerClass: "bg-green-50 border border-green-200",
     cardClass: "border-green-100 bg-green-50/40",
     selectedClass:
@@ -95,7 +102,8 @@ const CATEGORY_STYLES: Record<
     hoverClass: "hover:border-green-400",
   },
   "Spolupráca a komunikácia": {
-    description: "Hodnotenie spolupráce, komunikácie a odovzdávania informácií.",
+    description:
+      "Hodnotenie spolupráce, komunikácie a odovzdávania informácií.",
     headerClass: "bg-violet-50 border border-violet-200",
     cardClass: "border-violet-100 bg-violet-50/40",
     selectedClass:
@@ -111,7 +119,8 @@ const CATEGORY_STYLES: Record<
     hoverClass: "hover:border-cyan-400",
   },
   Rozvoj: {
-    description: "Hodnotenie záujmu o odborný rast a využívanie nových poznatkov.",
+    description:
+      "Hodnotenie záujmu o odborný rast a využívanie nových poznatkov.",
     headerClass: "bg-slate-100 border border-slate-200",
     cardClass: "border-slate-200 bg-slate-50",
     selectedClass:
@@ -119,7 +128,8 @@ const CATEGORY_STYLES: Record<
     hoverClass: "hover:border-slate-400",
   },
   "Individuálne plány a osobné ciele": {
-    description: "Hodnotenie práce s individuálnymi plánmi a osobnými cieľmi klienta.",
+    description:
+      "Hodnotenie práce s individuálnymi plánmi a osobnými cieľmi klienta.",
     headerClass: "bg-pink-50 border border-pink-200",
     cardClass: "border-pink-100 bg-pink-50/40",
     selectedClass:
@@ -127,7 +137,8 @@ const CATEGORY_STYLES: Record<
     hoverClass: "hover:border-pink-400",
   },
   "Prístup k PSS a prostrediu zariadenia": {
-    description: "Hodnotenie rešpektu, dôstojnosti a prístupu ku klientom v prostredí zariadenia.",
+    description:
+      "Hodnotenie rešpektu, dôstojnosti a prístupu ku klientom v prostredí zariadenia.",
     headerClass: "bg-emerald-50 border border-emerald-200",
     cardClass: "border-emerald-100 bg-emerald-50/40",
     selectedClass:
@@ -135,7 +146,8 @@ const CATEGORY_STYLES: Record<
     hoverClass: "hover:border-emerald-400",
   },
   "Tímová spolupráca": {
-    description: "Hodnotenie fungovania v tíme, podpory kolegov a spoločnej práce.",
+    description:
+      "Hodnotenie fungovania v tíme, podpory kolegov a spoločnej práce.",
     headerClass: "bg-indigo-50 border border-indigo-200",
     cardClass: "border-indigo-100 bg-indigo-50/40",
     selectedClass:
@@ -143,7 +155,8 @@ const CATEGORY_STYLES: Record<
     hoverClass: "hover:border-indigo-400",
   },
   "Rozvoj a zlepšovanie": {
-    description: "Hodnotenie vzdelávania, spätnej väzby a zlepšovania kvality práce.",
+    description:
+      "Hodnotenie vzdelávania, spätnej väzby a zlepšovania kvality práce.",
     headerClass: "bg-slate-100 border border-slate-200",
     cardClass: "border-slate-200 bg-slate-50",
     selectedClass:
