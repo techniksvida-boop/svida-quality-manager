@@ -4,6 +4,85 @@ import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, type FormEvent } from "react";
 
+const CATEGORY_STYLES: Record<
+  string,
+  {
+    description: string;
+    headerClass: string;
+    cardClass: string;
+    selectedClass: string;
+    hoverClass: string;
+  }
+> = {
+  "Profesionalita a zodpovednosť": {
+    description: "Hodnotenie spoľahlivosti, zodpovednosti a kvality práce.",
+    headerClass: "bg-blue-50 border border-blue-200",
+    cardClass: "border-blue-100 bg-blue-50/40",
+    selectedClass:
+      "peer-checked:border-blue-600 peer-checked:bg-blue-600 peer-checked:text-white",
+    hoverClass: "hover:border-blue-400",
+  },
+  "Komunikácia a spolupráca": {
+    description:
+      "Hodnotenie komunikácie, spolupráce a odovzdávania informácií.",
+    headerClass: "bg-violet-50 border border-violet-200",
+    cardClass: "border-violet-100 bg-violet-50/40",
+    selectedClass:
+      "peer-checked:border-violet-600 peer-checked:bg-violet-600 peer-checked:text-white",
+    hoverClass: "hover:border-violet-400",
+  },
+  "Prístup k PSS a prostrediu zariadenia": {
+    description: "Hodnotenie rešpektu, dôstojnosti a prístupu ku klientom.",
+    headerClass: "bg-emerald-50 border border-emerald-200",
+    cardClass: "border-emerald-100 bg-emerald-50/40",
+    selectedClass:
+      "peer-checked:border-emerald-600 peer-checked:bg-emerald-600 peer-checked:text-white",
+    hoverClass: "hover:border-emerald-400",
+  },
+  "Bezpečnosť práce a hospodárnosť": {
+    description:
+      "Hodnotenie bezpečnosti, hygieny a zodpovedného nakladania s prostriedkami.",
+    headerClass: "bg-amber-50 border border-amber-200",
+    cardClass: "border-amber-100 bg-amber-50/40",
+    selectedClass:
+      "peer-checked:border-amber-600 peer-checked:bg-amber-600 peer-checked:text-white",
+    hoverClass: "hover:border-amber-400",
+  },
+  "Dokumentácia a pracovné postupy": {
+    description:
+      "Hodnotenie presnosti záznamov, administratívy a dodržiavania postupov.",
+    headerClass: "bg-cyan-50 border border-cyan-200",
+    cardClass: "border-cyan-100 bg-cyan-50/40",
+    selectedClass:
+      "peer-checked:border-cyan-600 peer-checked:bg-cyan-600 peer-checked:text-white",
+    hoverClass: "hover:border-cyan-400",
+  },
+  "Dokumentácia a IS Cygnus": {
+    description: "Hodnotenie presnosti dokumentácie, zápisov a práce v IS Cygnus.",
+    headerClass: "bg-cyan-50 border border-cyan-200",
+    cardClass: "border-cyan-100 bg-cyan-50/40",
+    selectedClass:
+      "peer-checked:border-cyan-600 peer-checked:bg-cyan-600 peer-checked:text-white",
+    hoverClass: "hover:border-cyan-400",
+  },
+  "Individuálne plány a osobné ciele": {
+    description: "Hodnotenie práce s individuálnymi plánmi a cieľmi klienta.",
+    headerClass: "bg-pink-50 border border-pink-200",
+    cardClass: "border-pink-100 bg-pink-50/40",
+    selectedClass:
+      "peer-checked:border-pink-600 peer-checked:bg-pink-600 peer-checked:text-white",
+    hoverClass: "hover:border-pink-400",
+  },
+  "Rozvoj a zlepšovanie": {
+    description: "Hodnotenie vzdelávania, spätnej väzby a zlepšovania kvality práce.",
+    headerClass: "bg-slate-100 border border-slate-200",
+    cardClass: "border-slate-200 bg-slate-50",
+    selectedClass:
+      "peer-checked:border-slate-700 peer-checked:bg-slate-700 peer-checked:text-white",
+    hoverClass: "hover:border-slate-400",
+  },
+};
+
 export default function EvaluationForm({
   employeeId,
   periodId,
@@ -319,99 +398,129 @@ export default function EvaluationForm({
         </div>
       )}
 
-      {currentGroup && (
-        <section className="space-y-5">
-          <div className="rounded-xl bg-gray-100 p-5">
-            <p className="text-sm font-semibold text-gray-500">
-              Oblasť {currentStep + 1} z {totalSteps}
-            </p>
+      {currentGroup &&
+        (() => {
+          const categoryStyle =
+            CATEGORY_STYLES[currentGroup.categoryName] || {
+              description: "Hodnotenie danej oblasti.",
+              headerClass: "bg-gray-100 border border-gray-200",
+              cardClass: "border-gray-200 bg-white",
+              selectedClass:
+                "peer-checked:border-[#df4a33] peer-checked:bg-[#df4a33] peer-checked:text-white",
+              hoverClass: "hover:border-[#df4a33]",
+            };
 
-            <h2 className="mt-1 text-2xl font-bold text-gray-900">
-              {currentGroup.categoryName}
-            </h2>
-
-            <p className="mt-2 text-gray-600">
-              Vyberte hodnotenie od 1 do 5 pri každej otázke.
-            </p>
-          </div>
-
-          {currentGroup.questions.map((question, index) => {
-            const isMissing =
-              errorStep === currentStep &&
-              missingQuestionIds.includes(question.id);
-
-            return (
-              <div
-                id={`question-${question.id}`}
-                key={question.id}
-                className={`rounded-xl border p-6 ${
-                  isMissing
-                    ? "border-red-500 bg-red-50"
-                    : "border-gray-200 bg-white"
-                }`}
-              >
-                <p className="text-sm text-gray-500 mb-2">
-                  Otázka {index + 1} z {currentGroup.questions.length}
+          return (
+            <section className="space-y-5">
+              <div className={`rounded-2xl p-5 ${categoryStyle.headerClass}`}>
+                <p className="text-sm font-semibold text-gray-500">
+                  Oblasť {currentStep + 1} z {totalSteps}
                 </p>
 
-                <h2 className="text-xl font-semibold mb-5">
-                  {question.question} <span className="text-red-600">*</span>
+                <h2 className="mt-1 text-2xl font-bold text-gray-900">
+                  {currentGroup.categoryName}
                 </h2>
 
-                {isMissing && (
-                  <p className="mb-4 rounded-lg bg-red-100 px-4 py-3 text-base font-semibold text-red-700">
-                    Túto povinnú otázku ste ešte nevyplnili.
-                  </p>
-                )}
+                <p className="mt-2 text-gray-600">
+                  {categoryStyle.description}
+                </p>
 
-                <div className="grid grid-cols-5 gap-3">
-                  {[1, 2, 3, 4, 5].map((score) => (
-                    <label key={score} className="cursor-pointer">
-                      <input
-                        type="radio"
-                        name={question.id}
-                        value={score}
-                        checked={answers[question.id] === String(score)}
-                        required
-                        className="peer sr-only"
-                        onChange={() => {
-                          setAnswers((current) => ({
-                            ...current,
-                            [question.id]: String(score),
-                          }));
+                <p className="mt-2 text-sm text-gray-500">
+                  Vyplnené v tejto oblasti:{" "}
+                  {
+                    currentGroup.questions.filter(
+                      (question) => answers[question.id]
+                    ).length
+                  }{" "}
+                  / {currentGroup.questions.length}
+                </p>
 
-                          setMissingQuestionIds((current) =>
-                            current.filter((id) => id !== question.id)
-                          );
-
-                          setErrorStep(null);
-                          setValidationMessage("");
-                        }}
-                      />
-
-                      <span className="flex h-14 items-center justify-center rounded-xl border border-gray-300 bg-white text-xl font-bold text-gray-700 transition peer-checked:border-[#df4a33] peer-checked:bg-[#df4a33] peer-checked:text-white hover:border-[#df4a33]">
-                        {score}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-
-                <div className="mt-3 grid grid-cols-3 gap-2 text-xs text-gray-500">
-  <div className="text-left">
-    <strong>1</strong> = vôbec nesúhlasím
-  </div>
-  <div className="text-center">
-    <strong>3</strong> = neviem posúdiť / čiastočne
-  </div>
-  <div className="text-right">
-    <strong>5</strong> = úplne súhlasím
-  </div>
-</div>
+                <p className="mt-2 text-gray-600">
+                  Vyberte hodnotenie od 1 do 5 pri každej otázke.
+                </p>
               </div>
-            );
-          })}
-        </section>
-      )}
+
+              {currentGroup.questions.map((question, index) => {
+                const isMissing =
+                  errorStep === currentStep &&
+                  missingQuestionIds.includes(question.id);
+
+                return (
+                  <div
+                    id={`question-${question.id}`}
+                    key={question.id}
+                    className={`rounded-2xl border p-6 ${
+                      isMissing
+                        ? "border-red-500 bg-red-50"
+                        : categoryStyle.cardClass
+                    }`}
+                  >
+                    <p className="text-sm text-gray-500 mb-2">
+                      Otázka {index + 1} z {currentGroup.questions.length}
+                    </p>
+
+                    <h2 className="text-xl font-semibold mb-5">
+                      {question.question}{" "}
+                      <span className="text-red-600">*</span>
+                    </h2>
+
+                    {isMissing && (
+                      <p className="mb-4 rounded-lg bg-red-100 px-4 py-3 text-base font-semibold text-red-700">
+                        Túto povinnú otázku ste ešte nevyplnili.
+                      </p>
+                    )}
+
+                    <div className="grid grid-cols-5 gap-3">
+                      {[1, 2, 3, 4, 5].map((score) => (
+                        <label key={score} className="cursor-pointer">
+                          <input
+                            type="radio"
+                            name={question.id}
+                            value={score}
+                            checked={answers[question.id] === String(score)}
+                            required
+                            className="peer sr-only"
+                            onChange={() => {
+                              setAnswers((current) => ({
+                                ...current,
+                                [question.id]: String(score),
+                              }));
+
+                              setMissingQuestionIds((current) =>
+                                current.filter((id) => id !== question.id)
+                              );
+
+                              setErrorStep(null);
+                              setValidationMessage("");
+                            }}
+                          />
+
+                          <span
+                            className={`flex h-14 items-center justify-center rounded-xl border border-gray-300 bg-white text-xl font-bold text-gray-700 transition ${categoryStyle.selectedClass} ${categoryStyle.hoverClass}`}
+                          >
+                            {score}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-3 gap-2 text-xs text-gray-500">
+                      <div className="text-left">
+                        <strong>1</strong> = vôbec nesúhlasím
+                      </div>
+                      <div className="text-center">
+                        <strong>3</strong> = neviem posúdiť / čiastočne
+                      </div>
+                      <div className="text-right">
+                        <strong>5</strong> = úplne súhlasím
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </section>
+          );
+        })()}
 
       <div className="flex items-center justify-between gap-4">
         <button
