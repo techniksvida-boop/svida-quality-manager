@@ -4,18 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
-const DEPARTMENT_STYLES: Record<
-  string,
-  {
-    cardClass: string;
-    badgeClass: string;
-    titleClass: string;
-    buttonClass: string;
-    hoverClass: string;
-    employeeCardClass: string;
-    employeeButtonClass: string;
-  }
-> = {
+const DEPARTMENT_STYLES: Record<string, any> = {
   "Úsek opatrovateľskej starostlivosti": {
     cardClass: "bg-emerald-50 border border-emerald-200",
     badgeClass: "bg-emerald-100 text-emerald-700",
@@ -74,18 +63,19 @@ const DEFAULT_DEPARTMENT_STYLE = {
 };
 
 export default function HodnoteniePage() {
-  const [employees, setEmployees] = useState<any[]>([]);
-  const [used, setUsed] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedDepartment, setSelectedDepartment] = useState<string | null>(
-    null
-  );
+const [employees, setEmployees] = useState<any[]>([]);
+const [selfEmployee, setSelfEmployee] = useState<any>(null);
+const [selfDone, setSelfDone] = useState(false);
+const [used, setUsed] = useState<string[]>([]);
+const [loading, setLoading] = useState(true);
+const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadData() {
       const votingCodeId = localStorage.getItem("voting_code_id");
+      const employeeId = localStorage.getItem("employee_id");
 
-      if (!votingCodeId) {
+      if (!votingCodeId || !employeeId) {
         window.location.href = "/start";
         return;
       }
@@ -103,12 +93,37 @@ export default function HodnoteniePage() {
         .order("last_name");
 
       const { data: usageData } = await supabase
-        .from("voting_code_usage")
-        .select("evaluated_employee_id")
-        .eq("voting_code_id", votingCodeId);
+  .from("voting_code_usage")
+  .select("evaluated_employee_id, evaluation_type_id")
+  .eq("voting_code_id", votingCodeId);
+  const { data: selfType } = await supabase
+  .from("evaluation_types")
+  .select("id")
+  .eq("code", "self")
+  .single();
+  const { data: peerType } = await supabase
+  .from("evaluation_types")
+  .select("id")
+  .eq("code", "peer")
+  .single();
 
-      setEmployees(employeesData || []);
-      setUsed((usageData || []).map((x: any) => x.evaluated_employee_id));
+      const allEmployees = employeesData || [];
+
+      setSelfEmployee(allEmployees.find((employee: any) => employee.id === employeeId) || null);
+      setEmployees(allEmployees.filter((employee: any) => employee.id !== employeeId));
+  setUsed(
+  (usageData || [])
+    .filter((x: any) => x.evaluation_type_id === peerType?.id)
+    .map((x: any) => x.evaluated_employee_id)
+);
+
+const selfAlreadyDone = (usageData || []).some(
+  (x: any) =>
+    x.evaluation_type_id === selfType?.id &&
+    x.evaluated_employee_id === employeeId
+);
+
+setSelfDone(selfAlreadyDone);
       setLoading(false);
     }
 
@@ -136,8 +151,7 @@ export default function HodnoteniePage() {
   );
 
   const selectedDepartmentName =
-    departments.find((department: any) => department.id === selectedDepartment)
-      ?.name || "";
+    departments.find((department: any) => department.id === selectedDepartment)?.name || "";
 
   const selectedDepartmentStyle =
     DEPARTMENT_STYLES[selectedDepartmentName] || DEFAULT_DEPARTMENT_STYLE;
@@ -157,16 +171,47 @@ export default function HodnoteniePage() {
       </div>
 
       <h1 className="text-4xl font-bold">
-        Ročné anonymné hodnotenie zamestnancov
+        Ročné hodnotenie zamestnancov
       </h1>
 
       <p className="mt-2 text-gray-500">
-        Najprv vyberte úsek, následne pracovníka, ktorého chcete hodnotiť.
+        Najprv môžete vyplniť sebahodnotenie a následne anonymne hodnotiť kolegov.
       </p>
+
+      {selfEmployee && (
+        <div className="mt-8 rounded-2xl border border-orange-200 bg-orange-50 p-6">
+          <div className="inline-flex rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-orange-700">
+            Sebahodnotenie
+          </div>
+
+          <h2 className="mt-4 text-2xl font-bold text-orange-950">
+            {selfEmployee.first_name} {selfEmployee.last_name}
+          </h2>
+
+          <p className="mt-2 text-sm text-gray-600">
+            {selfEmployee.positions?.name}
+          </p>
+
+   {selfDone ? (
+  <div className="mt-5 inline-block rounded-xl bg-green-50 px-5 py-3 font-semibold text-green-700">
+    ✓ Sebahodnotenie odoslané
+  </div>
+) : (
+  <Link
+    href={`/employee/${selfEmployee.id}?type=self`}
+    className="mt-5 inline-block rounded-xl bg-orange-600 px-5 py-3 font-semibold text-white hover:bg-orange-700"
+  >
+    Ohodnotiť vlastnú prácu
+  </Link>
+)}
+        </div>
+      )}
 
       {!selectedDepartment ? (
         <>
-          <h2 className="mt-10 mb-5 text-2xl font-semibold">Vyberte úsek</h2>
+          <h2 className="mt-10 mb-5 text-2xl font-semibold">
+            Vyberte úsek pre anonymné hodnotenie kolegov
+          </h2>
 
           <div className="grid md:grid-cols-2 gap-5">
             {departments.map((department: any) => {
@@ -207,7 +252,7 @@ export default function HodnoteniePage() {
         <>
           <button
             onClick={() => setSelectedDepartment(null)}
-            className="mb-6 rounded-lg border px-4 py-2"
+            className="mb-6 mt-10 rounded-lg border px-4 py-2"
           >
             ← Späť na výber úsekov
           </button>
@@ -228,7 +273,7 @@ export default function HodnoteniePage() {
             </h2>
 
             <p className="mt-2 text-gray-600">
-              Vyberte zamestnanca, ktorého chcete hodnotiť.
+              Vyberte zamestnanca, ktorého chcete anonymne hodnotiť.
             </p>
           </div>
 
@@ -255,7 +300,7 @@ export default function HodnoteniePage() {
                     </div>
                   ) : (
                     <Link
-                      href={`/employee/${employee.id}`}
+                      href={`/employee/${employee.id}?type=peer`}
                       className={`mt-5 inline-block rounded-xl px-5 py-3 font-semibold transition ${selectedDepartmentStyle.employeeButtonClass}`}
                     >
                       Ohodnotiť

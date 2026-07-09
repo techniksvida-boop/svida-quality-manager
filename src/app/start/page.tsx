@@ -59,11 +59,11 @@ export default function StartPage() {
     setError("");
 
     const { data } = await supabase
-      .from("voting_codes")
-      .select("id, code, is_active")
-      .eq("code", code.toUpperCase())
-      .eq("is_active", true)
-      .single();
+  .from("voting_codes")
+  .select("id, code, is_active, employee_id")
+  .eq("code", code.toUpperCase())
+  .eq("is_active", true)
+  .single();
 
     setLoading(false);
 
@@ -74,6 +74,7 @@ export default function StartPage() {
 
     localStorage.setItem("voting_code_id", data.id);
     localStorage.setItem("voting_code", data.code);
+    localStorage.setItem("employee_id", data.employee_id);
 
     router.push("/hodnotenie");
   }

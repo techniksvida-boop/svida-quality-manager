@@ -1,7 +1,7 @@
 "use client";
 
 import { supabase } from "@/lib/supabase";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState, type FormEvent } from "react";
 
 const CATEGORY_STYLES: Record<
@@ -175,6 +175,8 @@ export default function EvaluationForm({
   questions: any[];
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+const evaluationTypeCode = searchParams.get("type") || "peer";
 
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -293,25 +295,40 @@ export default function EvaluationForm({
       return;
     }
 
-    const { data: alreadyUsed } = await supabase
-      .from("voting_code_usage")
-      .select("id")
-      .eq("voting_code_id", votingCodeId)
-      .eq("evaluated_employee_id", employeeId)
-      .maybeSingle();
+    const { data: evaluationType } = await supabase
+  .from("evaluation_types")
+  .select("id, code")
+  .eq("code", evaluationTypeCode)
+  .single();
 
-    if (alreadyUsed) {
-      alert("Tohto zamestnanca ste už hodnotili.");
-      setLoading(false);
-      return;
-    }
+if (!evaluationType) {
+  alert("Typ hodnotenia sa nepodarilo načítať.");
+  setLoading(false);
+  return;
+}
+
+const { data: alreadyUsed } = await supabase
+  .from("voting_code_usage")
+  .select("id")
+  .eq("voting_code_id", votingCodeId)
+  .eq("evaluated_employee_id", employeeId)
+  .eq("period_id", periodId)
+  .eq("evaluation_type_id", evaluationType.id)
+  .maybeSingle();
+
+if (alreadyUsed) {
+  alert("Toto hodnotenie ste už v aktuálnom období odoslali.");
+  setLoading(false);
+  return;
+}
 
     const { data: evaluation, error } = await supabase
       .from("evaluations")
       .insert({
         period_id: periodId,
         evaluated_employee_id: employeeId,
-        evaluation_type: "peer",
+        evaluation_type: evaluationTypeCode,
+evaluation_type_id: evaluationType.id,
         is_submitted: true,
         submitted_at: new Date().toISOString(),
       })
@@ -340,13 +357,15 @@ export default function EvaluationForm({
       return;
     }
 
-    const { error: usageError } = await supabase
-      .from("voting_code_usage")
-      .insert({
-        voting_code_id: votingCodeId,
-        evaluated_employee_id: employeeId,
-        evaluation_id: evaluation.id,
-      });
+   const { error: usageError } = await supabase
+  .from("voting_code_usage")
+  .insert({
+    voting_code_id: votingCodeId,
+    evaluated_employee_id: employeeId,
+    evaluation_id: evaluation.id,
+    period_id: periodId,
+    evaluation_type_id: evaluationType.id,
+  });
 
     if (usageError) {
       alert(usageError.message || "Použitie kódu sa nepodarilo uložiť.");
