@@ -2,18 +2,9 @@
 
 import { supabase } from "@/lib/supabase";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 
-const CATEGORY_STYLES: Record<
-  string,
-  {
-    description: string;
-    headerClass: string;
-    cardClass: string;
-    selectedClass: string;
-    hoverClass: string;
-  }
-> = {
+const CATEGORY_STYLES: Record<string, any> = {
   Profesionalita: {
     description: "Hodnotenie profesionálneho vystupovania a prístupu k práci.",
     headerClass: "bg-blue-50 border border-blue-200",
@@ -176,15 +167,47 @@ export default function EvaluationForm({
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-const evaluationTypeCode = searchParams.get("type") || "peer";
+  const evaluationTypeCode = searchParams.get("type") || "peer";
 
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [alreadySubmitted, setAlreadySubmitted] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [missingQuestionIds, setMissingQuestionIds] = useState<string[]>([]);
   const [validationMessage, setValidationMessage] = useState("");
   const [errorStep, setErrorStep] = useState<number | null>(null);
+
+  useEffect(() => {
+    async function checkAlreadySubmitted() {
+      const votingCodeId = localStorage.getItem("voting_code_id");
+
+      if (!votingCodeId || !periodId) return;
+
+      const { data: evaluationType } = await supabase
+        .from("evaluation_types")
+        .select("id")
+        .eq("code", evaluationTypeCode)
+        .single();
+
+      if (!evaluationType) return;
+
+      const { data: existingUsage } = await supabase
+        .from("voting_code_usage")
+        .select("id")
+        .eq("voting_code_id", votingCodeId)
+        .eq("evaluated_employee_id", employeeId)
+        .eq("period_id", periodId)
+        .eq("evaluation_type_id", evaluationType.id)
+        .maybeSingle();
+
+      if (existingUsage) {
+        setAlreadySubmitted(true);
+      }
+    }
+
+    checkAlreadySubmitted();
+  }, [employeeId, periodId, evaluationTypeCode]);
 
   const groupedQuestions = useMemo(() => {
     const groups: Record<string, any[]> = {};
@@ -212,14 +235,10 @@ const evaluationTypeCode = searchParams.get("type") || "peer";
   const answeredCount = Object.keys(answers).length;
   const totalQuestions = questions.length;
   const progress =
-    totalQuestions > 0
-      ? Math.round((answeredCount / totalQuestions) * 100)
-      : 0;
+    totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0;
 
   function validateCurrentStep() {
-    if (!currentGroup) {
-      return true;
-    }
+    if (!currentGroup) return true;
 
     const missing = currentGroup.questions
       .filter((question) => !answers[question.id])
@@ -249,9 +268,6 @@ const evaluationTypeCode = searchParams.get("type") || "peer";
   function goNext() {
     if (!validateCurrentStep()) return;
 
-    setMissingQuestionIds([]);
-    setValidationMessage("");
-    setErrorStep(null);
     setCurrentStep((step) => Math.min(step + 1, totalSteps - 1));
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -296,31 +312,32 @@ const evaluationTypeCode = searchParams.get("type") || "peer";
     }
 
     const { data: evaluationType } = await supabase
-  .from("evaluation_types")
-  .select("id, code")
-  .eq("code", evaluationTypeCode)
-  .single();
+      .from("evaluation_types")
+      .select("id, code")
+      .eq("code", evaluationTypeCode)
+      .single();
 
-if (!evaluationType) {
-  alert("Typ hodnotenia sa nepodarilo načítať.");
-  setLoading(false);
-  return;
-}
+    if (!evaluationType) {
+      alert("Typ hodnotenia sa nepodarilo načítať.");
+      setLoading(false);
+      return;
+    }
 
-const { data: alreadyUsed } = await supabase
-  .from("voting_code_usage")
-  .select("id")
-  .eq("voting_code_id", votingCodeId)
-  .eq("evaluated_employee_id", employeeId)
-  .eq("period_id", periodId)
-  .eq("evaluation_type_id", evaluationType.id)
-  .maybeSingle();
+    const { data: alreadyUsed } = await supabase
+      .from("voting_code_usage")
+      .select("id")
+      .eq("voting_code_id", votingCodeId)
+      .eq("evaluated_employee_id", employeeId)
+      .eq("period_id", periodId)
+      .eq("evaluation_type_id", evaluationType.id)
+      .maybeSingle();
 
-if (alreadyUsed) {
-  alert("Toto hodnotenie ste už v aktuálnom období odoslali.");
-  setLoading(false);
-  return;
-}
+    if (alreadyUsed) {
+      alert("Toto hodnotenie ste už v aktuálnom období odoslali.");
+      setLoading(false);
+      setAlreadySubmitted(true);
+      return;
+    }
 
     const { data: evaluation, error } = await supabase
       .from("evaluations")
@@ -328,7 +345,7 @@ if (alreadyUsed) {
         period_id: periodId,
         evaluated_employee_id: employeeId,
         evaluation_type: evaluationTypeCode,
-evaluation_type_id: evaluationType.id,
+        evaluation_type_id: evaluationType.id,
         is_submitted: true,
         submitted_at: new Date().toISOString(),
       })
@@ -357,15 +374,15 @@ evaluation_type_id: evaluationType.id,
       return;
     }
 
-   const { error: usageError } = await supabase
-  .from("voting_code_usage")
-  .insert({
-    voting_code_id: votingCodeId,
-    evaluated_employee_id: employeeId,
-    evaluation_id: evaluation.id,
-    period_id: periodId,
-    evaluation_type_id: evaluationType.id,
-  });
+    const { error: usageError } = await supabase
+      .from("voting_code_usage")
+      .insert({
+        voting_code_id: votingCodeId,
+        evaluated_employee_id: employeeId,
+        evaluation_id: evaluation.id,
+        period_id: periodId,
+        evaluation_type_id: evaluationType.id,
+      });
 
     if (usageError) {
       alert(usageError.message || "Použitie kódu sa nepodarilo uložiť.");
@@ -373,72 +390,73 @@ evaluation_type_id: evaluationType.id,
       return;
     }
 
-    const { count: totalEmployees } = await supabase
-      .from("employees")
-      .select("*", { count: "exact", head: true })
-      .eq("is_active", true);
-
-    const { count: completedEvaluations } = await supabase
-      .from("voting_code_usage")
-      .select("*", { count: "exact", head: true })
-      .eq("voting_code_id", votingCodeId);
-
     setLoading(false);
-
-    if (
-      totalEmployees &&
-      completedEvaluations &&
-      completedEvaluations >= totalEmployees
-    ) {
-      router.push("/dakujeme");
-      return;
-    }
-
     setSent(true);
   }
 
- if (sent) {
-  return (
-    <div className="mt-10">
-      <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-8 shadow-sm">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-3xl text-emerald-700">
-          ✓
-        </div>
+  if (alreadySubmitted) {
+    return (
+      <div className="mt-10 rounded-3xl border border-green-200 bg-green-50 p-8 text-center">
+        <h2 className="text-2xl font-bold text-green-800">
+          Hodnotenie už bolo odoslané
+        </h2>
 
-        <div className="mt-6 text-center">
-          <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">
-            Hodnotenie odoslané
-          </p>
+        <p className="mt-3 text-green-700">
+          Toto hodnotenie ste už v aktuálnom hodnotiacom období odoslali.
+        </p>
 
-          <h2 className="mt-2 text-3xl font-bold text-emerald-950">
-            Ďakujeme za vyplnenie hodnotenia
-          </h2>
+        <a
+          href="/hodnotenie"
+          className="mt-6 inline-block rounded-xl bg-green-600 px-6 py-3 font-semibold text-white"
+        >
+          Späť na hodnotenie
+        </a>
+      </div>
+    );
+  }
 
-          <p className="mx-auto mt-4 max-w-2xl text-lg leading-relaxed text-emerald-900/80">
-            Hodnotenie bolo úspešne uložené. Tohto zamestnanca už pod týmto
-            anonymným kódom nie je možné hodnotiť opakovane.
-          </p>
-        </div>
+  if (sent) {
+    return (
+      <div className="mt-10">
+        <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-8 shadow-sm">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100 text-3xl text-emerald-700">
+            ✓
+          </div>
 
-        <div className="mt-8 grid gap-4 md:grid-cols-2">
-          <a
-            href="/hodnotenie"
-            className="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-6 py-4 text-lg font-semibold text-white transition hover:bg-emerald-700"
-          >
-            Pokračovať na ďalších zamestnancov
-          </a>
+          <div className="mt-6 text-center">
+            <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">
+              Hodnotenie odoslané
+            </p>
 
-          <a
-            href="/start"
-            className="inline-flex items-center justify-center rounded-2xl border border-emerald-300 bg-white px-6 py-4 text-lg font-semibold text-emerald-800 transition hover:bg-emerald-100"
-          >
-            Späť na úvod
-          </a>
+            <h2 className="mt-2 text-3xl font-bold text-emerald-950">
+              Ďakujeme za vyplnenie hodnotenia
+            </h2>
+
+            <p className="mx-auto mt-4 max-w-2xl text-lg leading-relaxed text-emerald-900/80">
+              Hodnotenie bolo úspešne uložené. Tohto zamestnanca už pod týmto
+              anonymným kódom nie je možné hodnotiť opakovane.
+            </p>
+          </div>
+
+          <div className="mt-8 grid gap-4 md:grid-cols-2">
+            <a
+              href="/hodnotenie"
+              className="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-6 py-4 text-lg font-semibold text-white transition hover:bg-emerald-700"
+            >
+              Pokračovať na ďalších zamestnancov
+            </a>
+
+            <a
+              href="/start"
+              className="inline-flex items-center justify-center rounded-2xl border border-emerald-300 bg-white px-6 py-4 text-lg font-semibold text-emerald-800 transition hover:bg-emerald-100"
+            >
+              Späť na úvod
+            </a>
+          </div>
         </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
   return (
     <form onSubmit={handleFormSubmit} noValidate className="mt-10 space-y-8">
@@ -462,58 +480,45 @@ evaluation_type_id: evaluationType.id,
       </div>
 
       {currentStep === 0 && (
-  <>
-    <div className="rounded-xl p-6 svida-info-box">
-      <h2 className="text-2xl font-bold mb-5 svida-info-title">
-        Ako hodnotiť
-      </h2>
+        <>
+          <div className="rounded-xl p-6 svida-info-box">
+            <h2 className="text-2xl font-bold mb-5 svida-info-title">
+              Ako hodnotiť
+            </h2>
 
-      <div className="space-y-3 text-lg text-gray-700">
-        <p>
-          <strong>1</strong> = vôbec nesúhlasím
-        </p>
-        <p>
-          <strong>2</strong> = skôr nesúhlasím
-        </p>
-        <p>
-          <strong>3</strong> = neviem posúdiť / čiastočne
-        </p>
-        <p>
-          <strong>4</strong> = skôr súhlasím
-        </p>
-        <p>
-          <strong>5</strong> = úplne súhlasím
-        </p>
-      </div>
+            <div className="space-y-3 text-lg text-gray-700">
+              <p><strong>1</strong> = vôbec nesúhlasím</p>
+              <p><strong>2</strong> = skôr nesúhlasím</p>
+              <p><strong>3</strong> = neviem posúdiť / čiastočne</p>
+              <p><strong>4</strong> = skôr súhlasím</p>
+              <p><strong>5</strong> = úplne súhlasím</p>
+            </div>
 
-      <p className="mt-6 text-base text-gray-700">
-        Všetky otázky sú povinné.
-      </p>
-    </div>
+            <p className="mt-6 text-base text-gray-700">
+              Všetky otázky sú povinné.
+            </p>
+          </div>
 
-    <div className="rounded-xl p-6 svida-anonymity-box">
-      <h2 className="text-2xl font-bold svida-anonymity-title mb-5">
-        Anonymita hodnotenia
-      </h2>
+          <div className="rounded-xl p-6 svida-anonymity-box">
+            <h2 className="text-2xl font-bold svida-anonymity-title mb-5">
+              Anonymita hodnotenia
+            </h2>
 
-      <div className="space-y-4 text-lg leading-relaxed svida-anonymity-text">
-        <p>
-          Hodnotenie je anonymné. V systéme sa neeviduje meno hodnotiacej
-          osoby.
-        </p>
-
-        <p>
-          Anonymný kód slúži iba na overenie prístupu a na zabezpečenie toho,
-          aby jeden zamestnanec nehodnotil toho istého pracovníka opakovane.
-        </p>
-
-        <p>
-          Každý anonymný kód môže ohodnotiť konkrétneho zamestnanca iba raz.
-        </p>
-      </div>
-    </div>
-  </>
-)}
+            <div className="space-y-4 text-lg leading-relaxed svida-anonymity-text">
+              <p>
+                Hodnotenie je anonymné. V systéme sa neeviduje meno hodnotiacej osoby.
+              </p>
+              <p>
+                Anonymný kód slúži iba na overenie prístupu a na zabezpečenie toho,
+                aby jeden zamestnanec nehodnotil toho istého pracovníka opakovane.
+              </p>
+              <p>
+                Každý anonymný kód môže ohodnotiť konkrétneho zamestnanca iba raz.
+              </p>
+            </div>
+          </div>
+        </>
+      )}
 
       {validationMessage && errorStep === currentStep && (
         <div className="rounded-xl border border-red-400 bg-red-50 p-5 text-red-800">
@@ -549,20 +554,6 @@ evaluation_type_id: evaluationType.id,
 
                 <p className="mt-2 text-gray-600">
                   {categoryStyle.description}
-                </p>
-
-                <p className="mt-2 text-sm text-gray-500">
-                  Vyplnené v tejto oblasti:{" "}
-                  {
-                    currentGroup.questions.filter(
-                      (question) => answers[question.id]
-                    ).length
-                  }{" "}
-                  / {currentGroup.questions.length}
-                </p>
-
-                <p className="mt-2 text-gray-600">
-                  Vyberte hodnotenie od 1 do 5 pri každej otázke.
                 </p>
               </div>
 
@@ -628,18 +619,6 @@ evaluation_type_id: evaluationType.id,
                           </span>
                         </label>
                       ))}
-                    </div>
-
-                    <div className="mt-3 grid grid-cols-3 gap-2 text-xs text-gray-500">
-                      <div className="text-left">
-                        <strong>1</strong> = vôbec nesúhlasím
-                      </div>
-                      <div className="text-center">
-                        <strong>3</strong> = neviem posúdiť / čiastočne
-                      </div>
-                      <div className="text-right">
-                        <strong>5</strong> = úplne súhlasím
-                      </div>
                     </div>
                   </div>
                 );
