@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
@@ -10,8 +10,50 @@ export default function StartPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const [checkingPeriod, setCheckingPeriod] = useState(true);
+  const [votingOpen, setVotingOpen] = useState(false);
+  const [periodText, setPeriodText] = useState("");
+
+  useEffect(() => {
+    async function checkPeriod() {
+      const { data: period } = await supabase
+        .from("evaluation_periods")
+        .select("id, voting_from, voting_to")
+        .eq("is_active", true)
+        .single();
+
+      if (!period) {
+        setVotingOpen(false);
+        setPeriodText("Nie je nastavené aktívne hodnotiace obdobie.");
+        setCheckingPeriod(false);
+        return;
+      }
+
+      const today = new Date().toISOString().slice(0, 10);
+
+      const isOpen =
+        period.voting_from &&
+        period.voting_to &&
+        today >= period.voting_from &&
+        today <= period.voting_to;
+
+      setVotingOpen(Boolean(isOpen));
+      setPeriodText(
+        `Hlasovanie bude dostupné od ${period.voting_from} do ${period.voting_to}.`
+      );
+      setCheckingPeriod(false);
+    }
+
+    checkPeriod();
+  }, []);
+
   async function verifyCode(e: React.FormEvent) {
     e.preventDefault();
+
+    if (!votingOpen) {
+      setError("Hodnotenie momentálne nie je aktívne.");
+      return;
+    }
 
     setLoading(true);
     setError("");
@@ -39,45 +81,58 @@ export default function StartPage() {
   return (
     <main className="min-h-screen flex items-center justify-center svida-page-bg p-6">
       <div className="w-full max-w-md rounded-2xl p-8 svida-card">
-  <div className="mb-6 flex justify-center">
-    <img
-      src="/logo-svida.jpg"
-      alt="Senior dom Svida"
-      className="h-24 w-auto"
-    />
-  </div>
-
-  <h1 className="text-3xl font-bold text-center">
-    Anonymné hodnotenie
-  </h1>
-
-        <p className="mt-3 text-center text-gray-500">
-          Zadajte svoj 4-miestny anonymný kód.
-        </p>
-
-        <form onSubmit={verifyCode} className="mt-8 space-y-5">
-          <input
-            value={code}
-            onChange={(e) => setCode(e.target.value.toUpperCase())}
-            maxLength={4}
-            className="w-full rounded-xl border p-4 text-center text-2xl tracking-[8px] uppercase"
-            placeholder="AB12"
+        <div className="mb-6 flex justify-center">
+          <img
+            src="/logo-svida.jpg"
+            alt="Senior dom Svida"
+            className="h-24 w-auto"
           />
+        </div>
 
-          {error && (
-            <p className="text-center text-red-600">
-              {error}
+        <h1 className="text-3xl font-bold text-center">
+          Anonymné hodnotenie
+        </h1>
+
+        {checkingPeriod ? (
+          <p className="mt-6 text-center text-gray-500">
+            Overujem dostupnosť hodnotenia...
+          </p>
+        ) : !votingOpen ? (
+          <div className="mt-6 rounded-xl border border-orange-200 bg-orange-50 p-4 text-center text-orange-800">
+            <p className="font-semibold">Hodnotenie momentálne nie je aktívne.</p>
+            <p className="mt-2 text-sm">{periodText}</p>
+          </div>
+        ) : (
+          <>
+            <p className="mt-3 text-center text-gray-500">
+              Zadajte svoj 4-miestny anonymný kód.
             </p>
-          )}
 
-          <button
-            type="submit"
-            disabled={loading || code.length !== 4}
-            className="w-full rounded-xl py-4 font-semibold svida-btn"
-          >
-            {loading ? "Overujem..." : "Pokračovať"}
-          </button>
-        </form>
+            <form onSubmit={verifyCode} className="mt-8 space-y-5">
+              <input
+                value={code}
+                onChange={(e) => setCode(e.target.value.toUpperCase())}
+                maxLength={4}
+                className="w-full rounded-xl border p-4 text-center text-2xl tracking-[8px] uppercase"
+                placeholder="AB12"
+              />
+
+              {error && (
+                <p className="text-center text-red-600">
+                  {error}
+                </p>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading || code.length !== 4}
+                className="w-full rounded-xl py-4 font-semibold svida-btn"
+              >
+                {loading ? "Overujem..." : "Pokračovať"}
+              </button>
+            </form>
+          </>
+        )}
       </div>
     </main>
   );

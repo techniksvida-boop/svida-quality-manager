@@ -44,7 +44,7 @@ export default async function EmployeePage({ params }: Props) {
 
   const { data: period } = await supabase
     .from("evaluation_periods")
-    .select("id")
+    .select("id, voting_from, voting_to")
     .eq("is_active", true)
     .single();
 
@@ -55,7 +55,22 @@ export default async function EmployeePage({ params }: Props) {
       </main>
     );
   }
+const today = new Date().toISOString().slice(0, 10);
 
+const votingIsOpen =
+  period.voting_from &&
+  period.voting_to &&
+  today >= period.voting_from &&
+  today <= period.voting_to;
+
+if (!votingIsOpen) {
+  return (
+    <main className="max-w-3xl mx-auto p-8">
+      Hodnotenie momentálne nie je aktívne.
+      Hlasovanie bude dostupné od {period.voting_from} do {period.voting_to}.
+    </main>
+  );
+}
   if (!questions || questions.length === 0) {
     return (
       <main className="max-w-3xl mx-auto p-8">
