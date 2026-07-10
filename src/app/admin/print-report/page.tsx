@@ -224,7 +224,26 @@ function getTrainingPlanSummary(employeesWithStats: any[]) {
     .sort((a, b) => b.count - a.count);
 }
 
-export default async function PrintReportPage() {
+export default async function PrintReportPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ period?: string }>;
+}) {
+  const resolvedSearchParams = await searchParams;
+  const { data: periods } = await supabase
+  .from("evaluation_periods")
+  .select("id, name, date_from, date_to, is_active")
+  .order("date_from", { ascending: false });
+
+const selectedPeriod =
+  periods?.find(
+    (period: any) =>
+      period.id === resolvedSearchParams?.period
+  ) ||
+  periods?.find((period: any) => period.is_active) ||
+  periods?.[0];
+
+const selectedPeriodId = selectedPeriod?.id;
   const { data: employees } = await supabase
     .from("employees")
     .select("id, first_name, last_name, positions(name)")
@@ -375,12 +394,24 @@ export default async function PrintReportPage() {
       />
 
       <div style={{ textAlign: "center", marginBottom: "26px" }}>
-        <h1 style={{ fontSize: "21pt", fontWeight: "bold", margin: 0 }}>
-          Celkový manažérsky report anonymného hodnotenia
-        </h1>
+  <h1 style={{ fontSize: "21pt", fontWeight: "bold", margin: 0 }}>
+    Celkový manažérsky report anonymného hodnotenia
+  </h1>
 
-        <p style={{ marginTop: "6px" }}>Senior dom Svida</p>
-      </div>
+  <p
+    style={{
+      marginTop: "10px",
+      marginBottom: 0,
+      fontSize: "15pt",
+      fontWeight: "bold",
+      color: "#df4a33",
+    }}
+  >
+    Hodnotiace obdobie: {selectedPeriod?.name || "Neuvedené"}
+  </p>
+
+  <p style={{ marginTop: "6px" }}>Senior dom Svida</p>
+</div>
 
       <h2 style={sectionTitle}>1. Základné údaje</h2>
 
