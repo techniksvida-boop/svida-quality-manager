@@ -1774,7 +1774,10 @@ const allBenchmarkCategories = Array.from(
                       {getPositionName(employee)}
                     </p>
 
-                    <PrintButton recordId={`employee-record-${employee.id}`} />
+                    <PrintButton
+  recordId={`employee-record-${employee.id}`}
+  periodId={selectedPeriodId}
+/>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 text-right md:grid-cols-5">

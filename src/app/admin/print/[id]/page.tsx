@@ -183,10 +183,25 @@ function getCommentsByType(comments: any[], type: string) {
 
 export default async function PrintEmployeePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<{ period?: string }>;
 }) {
   const { id } = await params;
+  const resolvedSearchParams = await searchParams;
+  const requestedPeriodId = resolvedSearchParams?.period;
+  const { data: periods } = await supabase
+  .from("evaluation_periods")
+  .select("id, name, date_from, date_to, is_active")
+  .order("date_from", { ascending: false });
+
+const selectedPeriod =
+  periods?.find((period: any) => period.id === requestedPeriodId) ||
+  periods?.find((period: any) => period.is_active) ||
+  periods?.[0];
+
+const selectedPeriodId = selectedPeriod?.id;
 
   const { data: employee } = await supabase
     .from("employees")
@@ -202,11 +217,14 @@ export default async function PrintEmployeePage({
     );
   }
 
-  const { data: evaluations } = await supabase
-    .from("evaluations")
-    .select("id, evaluated_employee_id, submitted_at")
-    .eq("evaluated_employee_id", id)
-    .eq("is_submitted", true);
+  const { data: evaluations } = selectedPeriodId
+  ? await supabase
+      .from("evaluations")
+      .select("id, evaluated_employee_id, submitted_at")
+      .eq("evaluated_employee_id", id)
+      .eq("period_id", selectedPeriodId)
+      .eq("is_submitted", true)
+  : { data: [] };
 
   const { data: questions } = await supabase
     .from("evaluation_questions")
@@ -313,12 +331,24 @@ export default async function PrintEmployeePage({
       />
 
       <div style={{ textAlign: "center", marginBottom: "24px" }}>
-        <h1 style={{ fontSize: "20pt", fontWeight: "bold", margin: 0 }}>
-          Záznam z hodnotenia zamestnanca
-        </h1>
+  <h1 style={{ fontSize: "20pt", fontWeight: "bold", margin: 0 }}>
+    Záznam z hodnotenia zamestnanca
+  </h1>
 
-        <p style={{ marginTop: "6px" }}>Senior dom Svida</p>
-      </div>
+  <p
+    style={{
+      marginTop: "10px",
+      marginBottom: 0,
+      fontSize: "14pt",
+      fontWeight: "bold",
+      color: "#df4a33",
+    }}
+  >
+    Hodnotiace obdobie: {selectedPeriod?.name || "Neuvedené"}
+  </p>
+
+  <p style={{ marginTop: "6px" }}>Senior dom Svida</p>
+</div>
 
       <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <tbody>
@@ -335,11 +365,14 @@ export default async function PrintEmployeePage({
           </tr>
 
           <tr>
-            <td style={cellTitle}>Hodnotené obdobie</td>
-            <td style={cellValue}>
-              ............................................................
-            </td>
-          </tr>
+  <td style={cellTitle}>Hodnotené obdobie</td>
+  <td style={cellValue}>
+    {selectedPeriod?.name || "Neuvedené"}
+    {selectedPeriod?.date_from && selectedPeriod?.date_to
+      ? ` (${selectedPeriod.date_from} – ${selectedPeriod.date_to})`
+      : ""}
+  </td>
+</tr>
 
           <tr>
             <td style={cellTitle}>Dátum hodnotiaceho rozhovoru</td>
