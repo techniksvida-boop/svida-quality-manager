@@ -799,15 +799,24 @@ const managerOverallAverage = getOverallTypeAverage("manager");
 </div>
         </div>
 
-        <a
-          href={`/admin/print-report?period=${selectedPeriodId || ""}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
-        >
-          Vytlačiť celkový manažérsky report
-        </a>
-      </div>
+        <div className="flex flex-wrap gap-3">
+  <Link
+    href="/admin/trends"
+    className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+  >
+    Trendy medzi rokmi
+  </Link>
+
+  <a
+    href={`/admin/print-report?period=${selectedPeriodId || ""}`}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+  >
+    Vytlačiť celkový manažérsky report
+  </a>
+</div>
+</div>
 
       <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
   <div className="rounded-2xl border bg-white p-6 shadow-sm">
