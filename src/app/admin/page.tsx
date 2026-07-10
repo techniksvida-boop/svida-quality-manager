@@ -737,6 +737,33 @@ Object.entries(categoryTypeStats).forEach(
     .filter((employee: any) => employee.average !== null)
     .sort((a, b) => a.average - b.average)
     .slice(0, 5);
+function getOverallTypeAverage(typeCode: string) {
+  const values = employeesWithStats
+    .map((employee: any) =>
+      employee.typeResults?.find(
+        (type: any) => type.code === typeCode
+      )?.average
+    )
+    .filter(
+      (value: number | null | undefined): value is number =>
+        value !== null &&
+        value !== undefined &&
+        Number.isFinite(value)
+    );
+
+  if (values.length === 0) {
+    return null;
+  }
+
+  return (
+    values.reduce((sum: number, value: number) => sum + value, 0) /
+    values.length
+  );
+}
+
+const peerOverallAverage = getOverallTypeAverage("peer");
+const selfOverallAverage = getOverallTypeAverage("self");
+const managerOverallAverage = getOverallTypeAverage("manager");
 
   const overallLevel = getScoreLevel(overallAverage);
 
@@ -782,29 +809,71 @@ Object.entries(categoryTypeStats).forEach(
         </a>
       </div>
 
-      <div className="mt-8 grid gap-5 md:grid-cols-4">
-        <div className="rounded-2xl border bg-white p-6 shadow-sm">
-          <p className="text-gray-500">Počet kódov</p>
-          <p className="mt-2 text-3xl font-bold">{totalCodes || 0}</p>
-        </div>
+      <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+  <div className="rounded-2xl border bg-white p-6 shadow-sm">
+    <p className="text-gray-500">Sledovaní zamestnanci</p>
+    <p className="mt-2 text-3xl font-bold">
+      {employees?.length || 0}
+    </p>
+  </div>
 
-        <div className="rounded-2xl border bg-white p-6 shadow-sm">
-          <p className="text-gray-500">Odoslané hodnotenia</p>
-          <p className="mt-2 text-3xl font-bold">{usedEvaluations || 0}</p>
-        </div>
+  <div className="rounded-2xl border bg-white p-6 shadow-sm">
+    <p className="text-gray-500">Hodnotení zamestnanci</p>
+    <p className="mt-2 text-3xl font-bold">
+      {evaluatedEmployees.length}
+    </p>
+  </div>
 
-        <div className="rounded-2xl border bg-white p-6 shadow-sm">
-          <p className="text-gray-500">Hodnotení zamestnanci</p>
-          <p className="mt-2 text-3xl font-bold">
-            {evaluatedEmployeeIds.size}
-          </p>
-        </div>
+  <div className="rounded-2xl border bg-white p-6 shadow-sm">
+    <p className="text-gray-500">Odoslané hodnotenia</p>
+    <p className="mt-2 text-3xl font-bold">
+      {usedEvaluations || 0}
+    </p>
+  </div>
 
-        <div className="rounded-2xl border bg-white p-6 shadow-sm">
-          <p className="text-gray-500">Sledovaní zamestnanci</p>
-          <p className="mt-2 text-3xl font-bold">{employees?.length || 0}</p>
-        </div>
-      </div>
+  <div className="rounded-2xl border border-orange-200 bg-orange-50 p-6 shadow-sm">
+    <p className="text-orange-800">Celkový vážený výsledok</p>
+    <p className="mt-2 text-3xl font-bold text-orange-700">
+      {overallAverage !== null
+        ? overallAverage.toFixed(2)
+        : "—"}
+    </p>
+  </div>
+
+  <div className="rounded-2xl border border-blue-200 bg-blue-50 p-6 shadow-sm">
+    <p className="text-blue-800">Hodnotenie zamestnancov</p>
+    <p className="mt-2 text-3xl font-bold text-blue-700">
+      {peerOverallAverage !== null
+        ? peerOverallAverage.toFixed(2)
+        : "—"}
+    </p>
+  </div>
+
+  <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-6 shadow-sm">
+    <p className="text-indigo-800">Hodnotenie vedúcimi</p>
+    <p className="mt-2 text-3xl font-bold text-indigo-700">
+      {managerOverallAverage !== null
+        ? managerOverallAverage.toFixed(2)
+        : "—"}
+    </p>
+  </div>
+
+  <div className="rounded-2xl border border-violet-200 bg-violet-50 p-6 shadow-sm">
+    <p className="text-violet-800">Sebahodnotenie</p>
+    <p className="mt-2 text-3xl font-bold text-violet-700">
+      {selfOverallAverage !== null
+        ? selfOverallAverage.toFixed(2)
+        : "—"}
+    </p>
+  </div>
+
+  <div className="rounded-2xl border bg-white p-6 shadow-sm">
+    <p className="text-gray-500">Počet anonymných kódov</p>
+    <p className="mt-2 text-3xl font-bold">
+      {totalCodes || 0}
+    </p>
+  </div>
+</div>
 
       <section className="mt-10">
         <h2 className="mb-5 text-2xl font-semibold">
