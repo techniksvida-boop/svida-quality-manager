@@ -406,12 +406,33 @@ export default async function AdminPage({
     .order("last_name");
 
   const { data: evaluations } = selectedPeriodId
-    ? await supabase
-        .from("evaluations")
-        .select("id, evaluated_employee_id, submitted_at")
-        .eq("period_id", selectedPeriodId)
-        .eq("is_submitted", true)
-    : { data: [] };
+  ? await supabase
+      .from("evaluations")
+      .select(`
+        id,
+        evaluated_employee_id,
+        evaluation_type,
+        evaluation_type_id,
+        submitted_at
+      `)
+      .eq("period_id", selectedPeriodId)
+      .eq("is_submitted", true)
+  : { data: [] };
+  const { data: evaluationTypes } = await supabase
+  .from("evaluation_types")
+  .select("id, code, name, weight")
+  .eq("is_active", true);
+
+const evaluationTypeMap = new Map(
+  (evaluationTypes || []).map((type: any) => [
+    type.id,
+    {
+      code: type.code,
+      name: type.name,
+      weight: Number(type.weight),
+    },
+  ])
+);
 
   const { data: questions } = await supabase
     .from("evaluation_questions")
@@ -482,10 +503,61 @@ export default async function AdminPage({
 
     const scores = employeeAnswers.map((answer) => Number(answer.score));
 
-    const average =
-      scores.length > 0
-        ? scores.reduce((sum, score) => sum + score, 0) / scores.length
-        : null;
+const typeResults = (evaluationTypes || []).map((type: any) => {
+  const typeEvaluationIds = employeeEvaluations
+    .filter((evaluation: any) => {
+      if (evaluation.evaluation_type_id) {
+        return evaluation.evaluation_type_id === type.id;
+      }
+
+      return evaluation.evaluation_type === type.code;
+    })
+    .map((evaluation: any) => evaluation.id);
+
+  const typeScores = employeeAnswers
+    .filter((answer: any) =>
+      typeEvaluationIds.includes(answer.evaluation_id)
+    )
+    .map((answer: any) => Number(answer.score))
+    .filter((score: number) => Number.isFinite(score));
+
+  const typeAverage =
+    typeScores.length > 0
+      ? typeScores.reduce(
+          (sum: number, score: number) => sum + score,
+          0
+        ) / typeScores.length
+      : null;
+
+  return {
+    id: type.id,
+    code: type.code,
+    name: type.name,
+    weight: Number(type.weight),
+    average: typeAverage,
+    answerCount: typeScores.length,
+  };
+});
+
+const availableTypeResults = typeResults.filter(
+  (type: any) =>
+    type.average !== null &&
+    type.weight > 0
+);
+
+const availableWeight = availableTypeResults.reduce(
+  (sum: number, type: any) => sum + type.weight,
+  0
+);
+
+const average =
+  availableWeight > 0
+    ? availableTypeResults.reduce(
+        (sum: number, type: any) =>
+          sum + Number(type.average) * type.weight,
+        0
+      ) / availableWeight
+    : null;
 
     const categoryStats: CategoryStats = {};
 
@@ -516,14 +588,15 @@ export default async function AdminPage({
       createTrainingRecommendations(categoryStats);
 
     return {
-      ...employee,
-      evaluationCount: employeeEvaluations.length,
-      answerCount: scores.length,
-      average,
-      categoryStats,
-      comments: employeeComments,
-      trainingRecommendations,
-    };
+  ...employee,
+  evaluationCount: employeeEvaluations.length,
+  answerCount: scores.length,
+  average,
+  typeResults,
+  categoryStats,
+  comments: employeeComments,
+  trainingRecommendations,
+};
   });
 
   const sortedEmployees = employeesWithStats.sort((a, b) => {
@@ -984,39 +1057,90 @@ export default async function AdminPage({
                     <PrintButton recordId={`employee-record-${employee.id}`} />
                   </div>
 
-                  <div className="grid grid-cols-3 gap-4 text-right">
-                    <div>
-                      <p className="text-sm text-gray-500">Priemer</p>
+                  <div className="grid grid-cols-2 gap-4 text-right md:grid-cols-5">
+  <div>
+    <p className="text-sm text-gray-500">Výsledok</p>
 
-                      <p
-                        className={`text-2xl font-bold ${employeeLevel.valueClass}`}
-                      >
-                        {employee.average !== null
-                          ? employee.average.toFixed(2)
-                          : "—"}
-                      </p>
+    <p
+      className={`text-2xl font-bold ${employeeLevel.valueClass}`}
+    >
+      {employee.average !== null
+        ? employee.average.toFixed(2)
+        : "—"}
+    </p>
 
-                      <p
-                        className={`mt-1 inline-block rounded-full px-2 py-1 text-xs font-semibold ${employeeLevel.badgeClass}`}
-                      >
-                        {employeeLevel.label}
-                      </p>
-                    </div>
+    <p
+      className={`mt-1 inline-block rounded-full px-2 py-1 text-xs font-semibold ${employeeLevel.badgeClass}`}
+    >
+      {employeeLevel.label}
+    </p>
+  </div>
 
-                    <div>
-                      <p className="text-sm text-gray-500">Hodnotení</p>
-                      <p className="text-2xl font-bold">
-                        {employee.evaluationCount}
-                      </p>
-                    </div>
+  <div>
+    <p className="text-sm text-gray-500">
+      Hodnotenie zamestnancov
+    </p>
 
-                    <div>
-                      <p className="text-sm text-gray-500">Odpovedí</p>
-                      <p className="text-2xl font-bold">
-                        {employee.answerCount}
-                      </p>
-                    </div>
-                  </div>
+    <p className="text-2xl font-bold">
+      {employee.typeResults?.find(
+        (type: any) => type.code === "peer"
+      )?.average !== null &&
+      employee.typeResults?.find(
+        (type: any) => type.code === "peer"
+      )?.average !== undefined
+        ? employee.typeResults
+            .find((type: any) => type.code === "peer")
+            .average.toFixed(2)
+        : "—"}
+    </p>
+  </div>
+
+  <div>
+    <p className="text-sm text-gray-500">
+      Sebahodnotenie
+    </p>
+
+    <p className="text-2xl font-bold">
+      {employee.typeResults?.find(
+        (type: any) => type.code === "self"
+      )?.average !== null &&
+      employee.typeResults?.find(
+        (type: any) => type.code === "self"
+      )?.average !== undefined
+        ? employee.typeResults
+            .find((type: any) => type.code === "self")
+            .average.toFixed(2)
+        : "—"}
+    </p>
+  </div>
+
+  <div>
+    <p className="text-sm text-gray-500">
+      Hodnotenie vedúcim
+    </p>
+
+    <p className="text-2xl font-bold">
+      {employee.typeResults?.find(
+        (type: any) => type.code === "manager"
+      )?.average !== null &&
+      employee.typeResults?.find(
+        (type: any) => type.code === "manager"
+      )?.average !== undefined
+        ? employee.typeResults
+            .find((type: any) => type.code === "manager")
+            .average.toFixed(2)
+        : "—"}
+    </p>
+  </div>
+
+  <div>
+    <p className="text-sm text-gray-500">Hodnotení</p>
+
+    <p className="text-2xl font-bold">
+      {employee.evaluationCount}
+    </p>
+  </div>
+</div>
                 </div>
 
                 {Object.keys(employee.categoryStats).length > 0 && (
