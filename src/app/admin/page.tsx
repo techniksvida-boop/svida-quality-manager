@@ -559,25 +559,28 @@ const average =
       ) / availableWeight
     : null;
 
-    const evaluationTypeByEvaluationId = new Map(
-  employeeEvaluations.map((evaluation: any) => {
-    const evaluationType = (evaluationTypes || []).find(
-      (type: any) =>
-        type.id === evaluation.evaluation_type_id ||
-        type.code === evaluation.evaluation_type
-    );
+    const evaluationTypeByEvaluationId = new Map<
+  string,
+  {
+    code: string;
+    weight: number;
+  }
+>();
 
-    return [
-      evaluation.id,
-      evaluationType
-        ? {
-            code: evaluationType.code,
-            weight: Number(evaluationType.weight),
-          }
-        : null,
-    ];
-  })
-);
+employeeEvaluations.forEach((evaluation: any) => {
+  const evaluationType = (evaluationTypes || []).find(
+    (type: any) =>
+      type.id === evaluation.evaluation_type_id ||
+      type.code === evaluation.evaluation_type
+  );
+
+  if (evaluationType) {
+    evaluationTypeByEvaluationId.set(evaluation.id, {
+      code: evaluationType.code,
+      weight: Number(evaluationType.weight || 0),
+    });
+  }
+});
 
 const categoryTypeStats: Record<
   string,
@@ -593,7 +596,9 @@ const categoryTypeStats: Record<
 
 employeeAnswers.forEach((answer: any) => {
   const questionInfo = questionMap.get(answer.question_id);
-  const categoryName = questionInfo?.category || "Bez kategórie";
+
+  const categoryName =
+    questionInfo?.category || "Bez kategórie";
 
   const evaluationType = evaluationTypeByEvaluationId.get(
     answer.evaluation_id
@@ -615,11 +620,17 @@ employeeAnswers.forEach((answer: any) => {
     };
   }
 
-  categoryTypeStats[categoryName][evaluationType.code].total += Number(
-    answer.score
-  );
+  const score = Number(answer.score);
 
-  categoryTypeStats[categoryName][evaluationType.code].count += 1;
+  if (!Number.isFinite(score)) {
+    return;
+  }
+
+  categoryTypeStats[categoryName][evaluationType.code].total +=
+    score;
+
+  categoryTypeStats[categoryName][evaluationType.code].count +=
+    1;
 });
 
 const categoryStats: CategoryStats = {};
@@ -627,40 +638,43 @@ const categoryStats: CategoryStats = {};
 Object.entries(categoryTypeStats).forEach(
   ([categoryName, typeStats]) => {
     const availableTypes = Object.values(typeStats)
+      .filter(
+        (stats) =>
+          stats.count > 0 &&
+          stats.weight > 0
+      )
       .map((stats) => ({
-        average:
-          stats.count > 0 ? stats.total / stats.count : null,
+        average: stats.total / stats.count,
         weight: stats.weight,
         count: stats.count,
-      }))
-      .filter(
-        (
-          stats
-        ): stats is {
-          average: number;
-          weight: number;
-          count: number;
-        } => stats.average !== null && stats.weight > 0
-      );
+      }));
 
     const availableWeight = availableTypes.reduce(
       (sum, stats) => sum + stats.weight,
       0
     );
 
+    if (availableWeight === 0) {
+      return;
+    }
+
     const weightedAverage =
-      availableWeight > 0
-        ? availableTypes.reduce(
-            (sum, stats) =>
-              sum + stats.average * stats.weight,
-            0
-          ) / availableWeight
-        : 0;
+      availableTypes.reduce(
+        (sum, stats) =>
+          sum + stats.average * stats.weight,
+        0
+      ) / availableWeight;
 
     const answerCount = availableTypes.reduce(
       (sum, stats) => sum + stats.count,
       0
     );
+
+    categoryStats[categoryName] = {
+      total: weightedAverage * answerCount,
+      count: answerCount,
+      average: weightedAverage,
+    };
   }
 );
 
