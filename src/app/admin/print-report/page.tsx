@@ -250,10 +250,24 @@ const selectedPeriodId = selectedPeriod?.id;
     .eq("is_active", true)
     .order("last_name");
 
-  const { data: evaluations } = await supabase
-    .from("evaluations")
-    .select("id, evaluated_employee_id, submitted_at")
-    .eq("is_submitted", true);
+  const { data: evaluations } = selectedPeriodId
+  ? await supabase
+      .from("evaluations")
+      .select(`
+        id,
+        evaluated_employee_id,
+        evaluation_type,
+        evaluation_type_id,
+        submitted_at
+      `)
+      .eq("period_id", selectedPeriodId)
+      .eq("is_submitted", true)
+  : { data: [] };
+
+  const { data: evaluationTypes } = await supabase
+  .from("evaluation_types")
+  .select("id, code, name, weight")
+  .eq("is_active", true);
 
   const { data: questions } = await supabase
     .from("evaluation_questions")
@@ -296,12 +310,65 @@ const selectedPeriodId = selectedPeriod?.id;
         employeeEvaluationIds.includes(answer.evaluation_id)
       ) || [];
 
-    const scores = employeeAnswers.map((answer) => Number(answer.score));
+    const scores = employeeAnswers
+  .map((answer) => Number(answer.score))
+  .filter((score) => Number.isFinite(score));
 
-    const average =
-      scores.length > 0
-        ? scores.reduce((sum, score) => sum + score, 0) / scores.length
-        : null;
+const typeResults = (evaluationTypes || []).map((type: any) => {
+  const typeEvaluationIds = employeeEvaluations
+    .filter((evaluation: any) => {
+      if (evaluation.evaluation_type_id) {
+        return evaluation.evaluation_type_id === type.id;
+      }
+
+      return evaluation.evaluation_type === type.code;
+    })
+    .map((evaluation: any) => evaluation.id);
+
+  const typeScores = employeeAnswers
+    .filter((answer: any) =>
+      typeEvaluationIds.includes(answer.evaluation_id)
+    )
+    .map((answer: any) => Number(answer.score))
+    .filter((score: number) => Number.isFinite(score));
+
+  const typeAverage =
+    typeScores.length > 0
+      ? typeScores.reduce(
+          (sum: number, score: number) => sum + score,
+          0
+        ) / typeScores.length
+      : null;
+
+  return {
+    id: type.id,
+    code: type.code,
+    name: type.name,
+    weight: Number(type.weight || 0),
+    average: typeAverage,
+    answerCount: typeScores.length,
+  };
+});
+
+const availableTypeResults = typeResults.filter(
+  (type: any) =>
+    type.average !== null &&
+    type.weight > 0
+);
+
+const availableWeight = availableTypeResults.reduce(
+  (sum: number, type: any) => sum + type.weight,
+  0
+);
+
+const average =
+  availableWeight > 0
+    ? availableTypeResults.reduce(
+        (sum: number, type: any) =>
+          sum + Number(type.average) * type.weight,
+        0
+      ) / availableWeight
+    : null;
 
     const categoryStats: Record<
       string,
@@ -331,12 +398,13 @@ const selectedPeriodId = selectedPeriod?.id;
     });
 
     return {
-      ...employee,
-      evaluationCount: employeeEvaluations.length,
-      answerCount: scores.length,
-      average,
-      categoryStats,
-    };
+  ...employee,
+  evaluationCount: employeeEvaluations.length,
+  answerCount: scores.length,
+  average,
+  typeResults,
+  categoryStats,
+};
   });
 
   const sortedEmployees = employeesWithStats.sort((a, b) => {
