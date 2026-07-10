@@ -86,6 +86,14 @@ function getPositionName(employee: any) {
   return employee.positions?.name || "";
 }
 
+function getDepartmentName(employee: any) {
+  if (Array.isArray(employee?.departments)) {
+    return employee.departments[0]?.name || "Bez úseku";
+  }
+
+  return employee?.departments?.name || "Bez úseku";
+}
+
 function getCategoryName(question: any) {
   if (Array.isArray(question.evaluation_categories)) {
     return question.evaluation_categories[0]?.name || "Bez kategórie";
@@ -400,10 +408,16 @@ export default async function AdminPage({
   const selectedPeriodId = selectedPeriod?.id;
 
   const { data: employees } = await supabase
-    .from("employees")
-    .select("id, first_name, last_name, positions(name)")
-    .eq("is_active", true)
-    .order("last_name");
+  .from("employees")
+  .select(`
+    id,
+    first_name,
+    last_name,
+    positions(name),
+    departments(id, name)
+  `)
+  .eq("is_active", true)
+  .order("last_name");
 
   const { data: evaluations } = selectedPeriodId
   ? await supabase
@@ -764,7 +778,115 @@ function getOverallTypeAverage(typeCode: string) {
 const peerOverallAverage = getOverallTypeAverage("peer");
 const selfOverallAverage = getOverallTypeAverage("self");
 const managerOverallAverage = getOverallTypeAverage("manager");
+const departmentBenchmarkMap: Record<
+  string,
+  {
+    departmentName: string;
+    employeeScores: number[];
+    categoryScores: Record<string, number[]>;
+    evaluatedEmployees: number;
+  }
+> = {};
 
+employeesWithStats.forEach((employee: any) => {
+  const departmentName = getDepartmentName(employee);
+
+  if (!departmentBenchmarkMap[departmentName]) {
+    departmentBenchmarkMap[departmentName] = {
+      departmentName,
+      employeeScores: [],
+      categoryScores: {},
+      evaluatedEmployees: 0,
+    };
+  }
+
+  const department = departmentBenchmarkMap[departmentName];
+
+  if (
+    employee.average !== null &&
+    Number.isFinite(employee.average)
+  ) {
+    department.employeeScores.push(employee.average);
+    department.evaluatedEmployees += 1;
+  }
+
+  Object.entries(employee.categoryStats || {}).forEach(
+    ([categoryName, stats]: any) => {
+      if (
+        stats.average === null ||
+        !Number.isFinite(stats.average)
+      ) {
+        return;
+      }
+
+      if (!department.categoryScores[categoryName]) {
+        department.categoryScores[categoryName] = [];
+      }
+
+      department.categoryScores[categoryName].push(
+        stats.average
+      );
+    }
+  );
+});
+
+const departmentBenchmark = Object.values(
+  departmentBenchmarkMap
+)
+  .map((department) => {
+    const overallAverage =
+      department.employeeScores.length > 0
+        ? department.employeeScores.reduce(
+            (sum, value) => sum + value,
+            0
+          ) / department.employeeScores.length
+        : null;
+
+    const categories = Object.entries(
+      department.categoryScores
+    )
+      .map(([categoryName, values]) => ({
+        categoryName,
+        average:
+          values.length > 0
+            ? values.reduce(
+                (sum, value) => sum + value,
+                0
+              ) / values.length
+            : null,
+        employeeCount: values.length,
+      }))
+      .sort((a, b) => {
+        if (a.average === null) return 1;
+        if (b.average === null) return -1;
+
+        return b.average - a.average;
+      });
+
+    return {
+      departmentName: department.departmentName,
+      overallAverage,
+      evaluatedEmployees: department.evaluatedEmployees,
+      categories,
+    };
+  })
+
+  .sort((a, b) => {
+    if (a.overallAverage === null) return 1;
+    if (b.overallAverage === null) return -1;
+
+    return b.overallAverage - a.overallAverage;
+  });
+
+const allBenchmarkCategories = Array.from(
+  new Set(
+    departmentBenchmark.flatMap((department) =>
+      department.categories.map(
+        (category) => category.categoryName
+      )
+    )
+  )
+).sort((a, b) => a.localeCompare(b, "sk"));
   const overallLevel = getScoreLevel(overallAverage);
 
   return (
@@ -883,6 +1005,120 @@ const managerOverallAverage = getOverallTypeAverage("manager");
     </p>
   </div>
 </div>
+
+<section className="mt-10">
+  <div className="mb-5">
+    <h2 className="text-2xl font-semibold">
+      Benchmark medzi úsekmi
+    </h2>
+
+    <p className="mt-2 text-gray-500">
+      Porovnanie celkového výsledku a jednotlivých oblastí medzi úsekmi.
+    </p>
+  </div>
+
+  <div className="overflow-x-auto rounded-2xl border bg-white shadow-sm">
+    <table className="w-full min-w-[1100px] text-sm">
+      <thead className="border-b bg-gray-50">
+        <tr>
+          <th className="sticky left-0 z-10 bg-gray-50 p-3 text-left">
+            Úsek
+          </th>
+
+          <th className="p-3 text-center">
+            Celkový výsledok
+          </th>
+
+          <th className="p-3 text-center">
+            Hodnotení zamestnanci
+          </th>
+
+          {allBenchmarkCategories.map((categoryName) => (
+            <th
+              key={categoryName}
+              className="min-w-[180px] p-3 text-center"
+            >
+              {categoryName}
+            </th>
+          ))}
+        </tr>
+      </thead>
+
+      <tbody>
+        {departmentBenchmark.map((department) => {
+          const overallLevel = getScoreLevel(
+            department.overallAverage
+          );
+
+          return (
+            <tr
+              key={department.departmentName}
+              className="border-b last:border-b-0"
+            >
+              <td className="sticky left-0 z-10 bg-white p-3 font-semibold">
+                {department.departmentName}
+              </td>
+
+              <td className="p-3 text-center">
+                <span
+                  className={`inline-flex min-w-16 justify-center rounded-full px-3 py-1 font-bold ${overallLevel.badgeClass}`}
+                >
+                  {department.overallAverage !== null
+                    ? department.overallAverage.toFixed(2)
+                    : "—"}
+                </span>
+              </td>
+
+              <td className="p-3 text-center font-semibold">
+                {department.evaluatedEmployees}
+              </td>
+
+              {allBenchmarkCategories.map((categoryName) => {
+                const category = department.categories.find(
+                  (item) =>
+                    item.categoryName === categoryName
+                );
+
+                const categoryLevel = getScoreLevel(
+                  category?.average ?? null
+                );
+
+                return (
+                  <td
+                    key={categoryName}
+                    className="p-3 text-center"
+                  >
+                    <div
+                      className={`inline-flex min-w-16 justify-center rounded-full px-3 py-1 font-bold ${categoryLevel.badgeClass}`}
+                    >
+                      {category?.average !== null &&
+                      category?.average !== undefined
+                        ? category.average.toFixed(2)
+                        : "—"}
+                    </div>
+
+                    {category?.employeeCount ? (
+                      <div className="mt-1 text-xs text-gray-500">
+                        {category.employeeCount} zam.
+                      </div>
+                    ) : null}
+                  </td>
+                );
+              })}
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  </div>
+
+  {departmentBenchmark.length === 0 && (
+    <div className="rounded-xl border border-gray-200 bg-gray-50 p-5 text-gray-600">
+      Pre vybrané hodnotiace obdobie zatiaľ nie sú dostupné údaje
+      na porovnanie úsekov.
+    </div>
+  )}
+</section>
 
       <section className="mt-10">
         <h2 className="mb-5 text-2xl font-semibold">
