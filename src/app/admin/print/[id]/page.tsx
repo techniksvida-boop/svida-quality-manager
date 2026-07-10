@@ -177,10 +177,6 @@ function createTrainingRecommendations(
     .slice(0, 2);
 }
 
-function getCommentsByType(comments: any[], type: string) {
-  return comments.filter((comment) => comment.comment_type === type);
-}
-
 export default async function PrintEmployeePage({
   params,
   searchParams,
@@ -235,10 +231,6 @@ const selectedPeriodId = selectedPeriod?.id;
     .from("evaluation_answers")
     .select("evaluation_id, question_id, score");
 
-  const { data: comments } = await supabase
-    .from("evaluation_comments")
-    .select("evaluation_id, comment_type, comment_text");
-
   const employeeEvaluationIds = (evaluations || []).map(
     (evaluation) => evaluation.id
   );
@@ -290,18 +282,6 @@ const selectedPeriodId = selectedPeriod?.id;
     categoryStats[categoryName].average =
       categoryStats[categoryName].total / categoryStats[categoryName].count;
   });
-
-  const employeeComments =
-    comments?.filter((comment) =>
-      employeeEvaluationIds.includes(comment.evaluation_id)
-    ) || [];
-
-  const positiveComments = getCommentsByType(employeeComments, "positive");
-
-  const improvementComments = getCommentsByType(
-    employeeComments,
-    "improvement"
-  );
 
   const trainingRecommendations = createTrainingRecommendations(categoryStats);
 
@@ -416,30 +396,6 @@ const selectedPeriodId = selectedPeriod?.id;
         </table>
       ) : (
         <p>Zamestnanec zatiaľ nebol hodnotený.</p>
-      )}
-
-      <h2 style={sectionTitle}>Silné stránky</h2>
-
-      {positiveComments.length > 0 ? (
-        <ul>
-          {positiveComments.map((comment: any, index: number) => (
-            <li key={index}>{comment.comment_text}</li>
-          ))}
-        </ul>
-      ) : (
-        <p>Neboli uvedené slovné komentáre k silným stránkam.</p>
-      )}
-
-      <h2 style={sectionTitle}>Oblasti na zlepšenie</h2>
-
-      {improvementComments.length > 0 ? (
-        <ul>
-          {improvementComments.map((comment: any, index: number) => (
-            <li key={index}>{comment.comment_text}</li>
-          ))}
-        </ul>
-      ) : (
-        <p>Neboli uvedené slovné komentáre k oblastiam na zlepšenie.</p>
       )}
 
       <h2 style={sectionTitle}>
