@@ -1,5 +1,6 @@
 export const dynamic = "force-dynamic";
 
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import PrintButton from "./PrintButton";
 
@@ -377,38 +378,79 @@ function getTrainingTopicSummary(employeesWithStats: any[]) {
     .sort((a, b) => b.count - a.count);
 }
 
-export default async function AdminPage() {
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ period?: string }>;
+}) {
+  const resolvedSearchParams = await searchParams;
+
+  const { data: periods } = await supabase
+    .from("evaluation_periods")
+    .select("*")
+    .order("date_from", { ascending: false });
+
+  const selectedPeriod =
+    periods?.find(
+      (period: any) => period.id === resolvedSearchParams?.period
+    ) ||
+    periods?.find((period: any) => period.is_active) ||
+    periods?.[0];
+
+  const selectedPeriodId = selectedPeriod?.id;
+
   const { data: employees } = await supabase
     .from("employees")
     .select("id, first_name, last_name, positions(name)")
     .eq("is_active", true)
     .order("last_name");
 
-  const { data: evaluations } = await supabase
-    .from("evaluations")
-    .select("id, evaluated_employee_id, submitted_at")
-    .eq("is_submitted", true);
+  const { data: evaluations } = selectedPeriodId
+    ? await supabase
+        .from("evaluations")
+        .select("id, evaluated_employee_id, submitted_at")
+        .eq("period_id", selectedPeriodId)
+        .eq("is_submitted", true)
+    : { data: [] };
 
   const { data: questions } = await supabase
     .from("evaluation_questions")
     .select("id, question, evaluation_categories(name)")
     .eq("is_active", true);
 
-  const { data: answers } = await supabase
-    .from("evaluation_answers")
-    .select("evaluation_id, question_id, score");
+  const evaluationIds = (evaluations || []).map(
+    (evaluation: any) => evaluation.id
+  );
 
-  const { data: comments } = await supabase
-    .from("evaluation_comments")
-    .select("evaluation_id, comment_type, comment_text");
+  const { data: answers } =
+    evaluationIds.length > 0
+      ? await supabase
+          .from("evaluation_answers")
+          .select("evaluation_id, question_id, score")
+          .in("evaluation_id", evaluationIds)
+      : { data: [] };
 
-  const { count: totalCodes } = await supabase
-    .from("voting_codes")
-    .select("*", { count: "exact", head: true });
+  const { data: comments } =
+    evaluationIds.length > 0
+      ? await supabase
+          .from("evaluation_comments")
+          .select("evaluation_id, comment_type, comment_text")
+          .in("evaluation_id", evaluationIds)
+      : { data: [] };
 
-  const { count: usedEvaluations } = await supabase
-    .from("voting_code_usage")
-    .select("*", { count: "exact", head: true });
+  const { count: totalCodes } = selectedPeriodId
+    ? await supabase
+        .from("voting_codes")
+        .select("*", { count: "exact", head: true })
+        .eq("period_id", selectedPeriodId)
+    : { count: 0 };
+
+  const { count: usedEvaluations } = selectedPeriodId
+    ? await supabase
+        .from("voting_code_usage")
+        .select("*", { count: "exact", head: true })
+        .eq("period_id", selectedPeriodId)
+    : { count: 0 };
 
   const evaluatedEmployeeIds = new Set(
     (evaluations || []).map((evaluation) => evaluation.evaluated_employee_id)
@@ -535,10 +577,31 @@ export default async function AdminPage() {
           <p className="mt-3 text-gray-500">
             Prehľad anonymného hodnotenia zamestnancov sociálneho úseku.
           </p>
+          <div className="mt-6">
+  <p className="mb-3 text-sm font-semibold text-gray-600">
+    Hodnotiace obdobie
+  </p>
+
+  <div className="flex flex-wrap gap-3">
+    {(periods || []).map((period: any) => (
+      <Link
+        key={period.id}
+        href={`/admin?period=${period.id}`}
+        className={`rounded-xl border px-4 py-2 font-semibold transition ${
+          selectedPeriod?.id === period.id
+            ? "border-[#df4a33] bg-[#df4a33] text-white"
+            : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+        }`}
+      >
+        {period.name}
+      </Link>
+    ))}
+  </div>
+</div>
         </div>
 
         <a
-          href="/admin/print-report"
+          href={`/admin/print-report?period=${selectedPeriodId || ""}`}
           target="_blank"
           rel="noopener noreferrer"
           className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
