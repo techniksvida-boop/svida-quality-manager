@@ -559,25 +559,110 @@ const average =
       ) / availableWeight
     : null;
 
-    const categoryStats: CategoryStats = {};
+    const evaluationTypeByEvaluationId = new Map(
+  employeeEvaluations.map((evaluation: any) => {
+    const evaluationType = (evaluationTypes || []).find(
+      (type: any) =>
+        type.id === evaluation.evaluation_type_id ||
+        type.code === evaluation.evaluation_type
+    );
 
-    employeeAnswers.forEach((answer: any) => {
-      const questionInfo = questionMap.get(answer.question_id);
-      const categoryName = questionInfo?.category || "Bez kategórie";
+    return [
+      evaluation.id,
+      evaluationType
+        ? {
+            code: evaluationType.code,
+            weight: Number(evaluationType.weight),
+          }
+        : null,
+    ];
+  })
+);
 
-      if (!categoryStats[categoryName]) {
-        categoryStats[categoryName] = {
-          total: 0,
-          count: 0,
-          average: 0,
-        };
-      }
+const categoryTypeStats: Record<
+  string,
+  Record<
+    string,
+    {
+      total: number;
+      count: number;
+      weight: number;
+    }
+  >
+> = {};
 
-      categoryStats[categoryName].total += Number(answer.score);
-      categoryStats[categoryName].count += 1;
-      categoryStats[categoryName].average =
-        categoryStats[categoryName].total / categoryStats[categoryName].count;
-    });
+employeeAnswers.forEach((answer: any) => {
+  const questionInfo = questionMap.get(answer.question_id);
+  const categoryName = questionInfo?.category || "Bez kategórie";
+
+  const evaluationType = evaluationTypeByEvaluationId.get(
+    answer.evaluation_id
+  );
+
+  if (!evaluationType) {
+    return;
+  }
+
+  if (!categoryTypeStats[categoryName]) {
+    categoryTypeStats[categoryName] = {};
+  }
+
+  if (!categoryTypeStats[categoryName][evaluationType.code]) {
+    categoryTypeStats[categoryName][evaluationType.code] = {
+      total: 0,
+      count: 0,
+      weight: evaluationType.weight,
+    };
+  }
+
+  categoryTypeStats[categoryName][evaluationType.code].total += Number(
+    answer.score
+  );
+
+  categoryTypeStats[categoryName][evaluationType.code].count += 1;
+});
+
+const categoryStats: CategoryStats = {};
+
+Object.entries(categoryTypeStats).forEach(
+  ([categoryName, typeStats]) => {
+    const availableTypes = Object.values(typeStats)
+      .map((stats) => ({
+        average:
+          stats.count > 0 ? stats.total / stats.count : null,
+        weight: stats.weight,
+        count: stats.count,
+      }))
+      .filter(
+        (
+          stats
+        ): stats is {
+          average: number;
+          weight: number;
+          count: number;
+        } => stats.average !== null && stats.weight > 0
+      );
+
+    const availableWeight = availableTypes.reduce(
+      (sum, stats) => sum + stats.weight,
+      0
+    );
+
+    const weightedAverage =
+      availableWeight > 0
+        ? availableTypes.reduce(
+            (sum, stats) =>
+              sum + stats.average * stats.weight,
+            0
+          ) / availableWeight
+        : 0;
+
+    const answerCount = availableTypes.reduce(
+      (sum, stats) => sum + stats.count,
+      0
+    );
+  }
+);
 
     const employeeComments =
       comments?.filter((comment) =>
