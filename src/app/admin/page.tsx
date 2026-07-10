@@ -753,7 +753,17 @@ Object.entries(categoryTypeStats).forEach(
       Number.isFinite(employee.average)
   )
   .slice(0, 10);
-
+const bottomTenEmployees = [...sortedEmployees]
+  .filter(
+    (employee: any) =>
+      employee.average !== null &&
+      Number.isFinite(employee.average)
+  )
+  .sort(
+    (a: any, b: any) =>
+      Number(a.average) - Number(b.average)
+  )
+  .slice(0, 10);
   const weakestEmployees = [...sortedEmployees]
     .filter((employee: any) => employee.average !== null)
     .sort((a, b) => a.average - b.average)
@@ -1266,6 +1276,154 @@ const allBenchmarkCategories = Array.from(
     <div className="rounded-xl border border-gray-200 bg-gray-50 p-5 text-gray-600">
       Vo vybranom hodnotiacom období zatiaľ nie sú dostupné hodnotenia
       zamestnancov.
+    </div>
+  )}
+</section>
+<section className="mt-10">
+  <div className="mb-5">
+    <h2 className="text-2xl font-semibold">
+      TOP 10 najnižšie hodnotených zamestnancov
+    </h2>
+
+    <p className="mt-2 text-gray-500">
+      Zamestnanci s najnižším celkovým váženým výsledkom vo vybranom
+      hodnotiacom období.
+    </p>
+  </div>
+
+  <div className="overflow-x-auto rounded-2xl border bg-white shadow-sm">
+    <table className="w-full min-w-[1000px] text-sm">
+      <thead className="border-b bg-gray-50">
+        <tr>
+          <th className="p-3 text-center">
+            Poradie
+          </th>
+
+          <th className="p-3 text-left">
+            Zamestnanec
+          </th>
+
+          <th className="p-3 text-left">
+            Úsek
+          </th>
+
+          <th className="p-3 text-center">
+            Hodnotenie zamestnancov
+          </th>
+
+          <th className="p-3 text-center">
+            Sebahodnotenie
+          </th>
+
+          <th className="p-3 text-center">
+            Hodnotenie vedúcim
+          </th>
+
+          <th className="p-3 text-center">
+            Celkový výsledok
+          </th>
+
+          <th className="p-3 text-center">
+            Počet hodnotení
+          </th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {bottomTenEmployees.map(
+          (employee: any, index: number) => {
+            const peer = employee.typeResults?.find(
+              (type: any) => type.code === "peer"
+            );
+
+            const self = employee.typeResults?.find(
+              (type: any) => type.code === "self"
+            );
+
+            const manager = employee.typeResults?.find(
+              (type: any) => type.code === "manager"
+            );
+
+            const resultLevel = getScoreLevel(
+              employee.average
+            );
+
+            return (
+              <tr
+                key={employee.id}
+                className="border-b last:border-b-0"
+              >
+                <td className="p-3 text-center">
+                  <span
+                    className={`inline-flex h-8 w-8 items-center justify-center rounded-full font-bold ${
+                      index === 0
+                        ? "bg-red-100 text-red-800"
+                        : index === 1
+                        ? "bg-orange-100 text-orange-800"
+                        : index === 2
+                        ? "bg-amber-100 text-amber-800"
+                        : "bg-gray-100 text-gray-700"
+                    }`}
+                  >
+                    {index + 1}
+                  </span>
+                </td>
+
+                <td className="p-3 font-semibold">
+                  {employee.first_name}{" "}
+                  {employee.last_name}
+                </td>
+
+                <td className="p-3 text-gray-600">
+                  {getDepartmentName(employee)}
+                </td>
+
+                <td className="p-3 text-center font-semibold">
+                  {peer?.average !== null &&
+                  peer?.average !== undefined
+                    ? peer.average.toFixed(2)
+                    : "—"}
+                </td>
+
+                <td className="p-3 text-center font-semibold">
+                  {self?.average !== null &&
+                  self?.average !== undefined
+                    ? self.average.toFixed(2)
+                    : "—"}
+                </td>
+
+                <td className="p-3 text-center font-semibold">
+                  {manager?.average !== null &&
+                  manager?.average !== undefined
+                    ? manager.average.toFixed(2)
+                    : "—"}
+                </td>
+
+                <td className="p-3 text-center">
+                  <span
+                    className={`inline-flex min-w-16 justify-center rounded-full px-3 py-1 font-bold ${resultLevel.badgeClass}`}
+                  >
+                    {employee.average !== null
+                      ? employee.average.toFixed(2)
+                      : "—"}
+                  </span>
+                </td>
+
+                <td className="p-3 text-center font-semibold">
+                  {employee.evaluationCount}
+                </td>
+              </tr>
+            );
+          }
+        )}
+      </tbody>
+    </table>
+  </div>
+
+  {bottomTenEmployees.length === 0 && (
+    <div className="rounded-xl border border-gray-200 bg-gray-50 p-5 text-gray-600">
+      Vo vybranom hodnotiacom období zatiaľ nie sú dostupné
+      hodnotenia zamestnancov.
     </div>
   )}
 </section>
