@@ -479,6 +479,98 @@ const evaluationTypeMap = new Map(
         .select("*", { count: "exact", head: true })
         .eq("period_id", selectedPeriodId)
     : { count: 0 };
+    const { data: periodUsage } = selectedPeriodId
+  ? await supabase
+      .from("voting_code_usage")
+      .select("voting_code_id")
+      .eq("period_id", selectedPeriodId)
+  : { data: [] };
+
+const usedVotingCodeIds = Array.from(
+  new Set(
+    (periodUsage || [])
+      .map((usage: any) => usage.voting_code_id)
+      .filter(Boolean)
+  )
+);
+
+const { data: participantCodes } =
+  usedVotingCodeIds.length > 0
+    ? await supabase
+        .from("voting_codes")
+        .select("id, employee_id")
+        .in("id", usedVotingCodeIds)
+    : { data: [] };
+
+const participatingEmployeeIds = new Set(
+  (participantCodes || [])
+    .map((code: any) => code.employee_id)
+    .filter(Boolean)
+);
+
+const totalActiveEmployees = employees?.length || 0;
+
+const participatingEmployeesCount = (employees || []).filter(
+  (employee: any) => participatingEmployeeIds.has(employee.id)
+).length;
+
+const nonParticipatingEmployeesCount = Math.max(
+  totalActiveEmployees - participatingEmployeesCount,
+  0
+);
+
+const overallParticipationPercentage =
+  totalActiveEmployees > 0
+    ? (participatingEmployeesCount / totalActiveEmployees) * 100
+    : 0;
+
+const departmentParticipationMap: Record<
+  string,
+  {
+    departmentName: string;
+    totalEmployees: number;
+    participatingEmployees: number;
+  }
+> = {};
+
+(employees || []).forEach((employee: any) => {
+  const departmentName = getDepartmentName(employee);
+
+  if (!departmentParticipationMap[departmentName]) {
+    departmentParticipationMap[departmentName] = {
+      departmentName,
+      totalEmployees: 0,
+      participatingEmployees: 0,
+    };
+  }
+
+  departmentParticipationMap[departmentName].totalEmployees += 1;
+
+  if (participatingEmployeeIds.has(employee.id)) {
+    departmentParticipationMap[
+      departmentName
+    ].participatingEmployees += 1;
+  }
+});
+
+const departmentParticipation = Object.values(
+  departmentParticipationMap
+)
+  .map((department) => ({
+    ...department,
+    nonParticipatingEmployees:
+      department.totalEmployees -
+      department.participatingEmployees,
+    percentage:
+      department.totalEmployees > 0
+        ? (department.participatingEmployees /
+            department.totalEmployees) *
+          100
+        : 0,
+  }))
+  .sort((a, b) =>
+    a.departmentName.localeCompare(b.departmentName, "sk")
+  );
 
   const { count: usedEvaluations } = selectedPeriodId
     ? await supabase
@@ -552,6 +644,7 @@ const typeResults = (evaluationTypes || []).map((type: any) => {
     answerCount: typeScores.length,
   };
 });
+
 
 const availableTypeResults = typeResults.filter(
   (type: any) =>
@@ -1022,7 +1115,126 @@ const allBenchmarkCategories = Array.from(
     </p>
   </div>
 </div>
+<section className="mt-10">
+  <div className="mb-5">
+    <h2 className="text-2xl font-semibold">
+      Účasť zamestnancov na hodnotení
+    </h2>
 
+    <p className="mt-2 text-gray-500">
+      Účasť je vypočítaná podľa zamestnancov, ktorí vo vybranom
+      hodnotiacom období použili svoj hodnotiaci kód aspoň raz.
+    </p>
+  </div>
+
+  <div className="grid gap-5 md:grid-cols-3">
+    <div className="rounded-2xl border border-blue-200 bg-blue-50 p-6 shadow-sm">
+      <p className="text-gray-600">
+        Celková účasť zamestnancov
+      </p>
+
+      <p className="mt-2 text-4xl font-bold text-blue-700">
+        {overallParticipationPercentage
+          .toFixed(1)
+          .replace(".", ",")}{" "}
+        %
+      </p>
+
+      <p className="mt-3 text-sm text-gray-600">
+        Zúčastnilo sa {participatingEmployeesCount} z{" "}
+        {totalActiveEmployees} aktívnych zamestnancov.
+      </p>
+    </div>
+
+    <div className="rounded-2xl border bg-white p-6 shadow-sm">
+      <p className="text-gray-500">
+        Zúčastnení zamestnanci
+      </p>
+
+      <p className="mt-2 text-3xl font-bold">
+        {participatingEmployeesCount}
+      </p>
+    </div>
+
+    <div className="rounded-2xl border bg-white p-6 shadow-sm">
+      <p className="text-gray-500">
+        Nezúčastnení zamestnanci
+      </p>
+
+      <p className="mt-2 text-3xl font-bold">
+        {nonParticipatingEmployeesCount}
+      </p>
+    </div>
+  </div>
+
+  <div className="mt-6 overflow-x-auto rounded-2xl border bg-white shadow-sm">
+    <table className="w-full min-w-[750px] text-sm">
+      <thead className="border-b bg-gray-50">
+        <tr>
+          <th className="p-3 text-left">Úsek</th>
+
+          <th className="p-3 text-center">
+            Počet zamestnancov
+          </th>
+
+          <th className="p-3 text-center">
+            Zúčastnení
+          </th>
+
+          <th className="p-3 text-center">
+            Nezúčastnení
+          </th>
+
+          <th className="p-3 text-center">
+            Účasť
+          </th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {departmentParticipation.map((department) => (
+          <tr
+            key={department.departmentName}
+            className="border-b last:border-b-0"
+          >
+            <td className="p-3 font-semibold">
+              {department.departmentName}
+            </td>
+
+            <td className="p-3 text-center">
+              {department.totalEmployees}
+            </td>
+
+            <td className="p-3 text-center font-semibold">
+              {department.participatingEmployees}
+            </td>
+
+            <td className="p-3 text-center">
+              {department.nonParticipatingEmployees}
+            </td>
+
+            <td className="p-3 text-center">
+              <span
+                className={`inline-flex min-w-20 justify-center rounded-full px-3 py-1 font-bold ${
+                  department.percentage >= 80
+                    ? "bg-green-100 text-green-800"
+                    : department.percentage >= 50
+                    ? "bg-orange-100 text-orange-800"
+                    : "bg-red-100 text-red-800"
+                }`}
+              >
+                {department.percentage
+                  .toFixed(1)
+                  .replace(".", ",")}{" "}
+                %
+              </span>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+</section>
 <section className="mt-10">
   <div className="mb-5">
     <h2 className="text-2xl font-semibold">
