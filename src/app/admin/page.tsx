@@ -1000,12 +1000,15 @@ const allBenchmarkCategories = Array.from(
   const overallLevel = getScoreLevel(overallAverage);
 
   return (
-    <main className="max-w-6xl mx-auto p-8">
-      <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+    <main className="svida-page svida-page-bg">
+  <div className="svida-container min-w-0">
+      <header className="flex min-w-0 flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h1 className="text-4xl font-bold">Manažérsky dashboard</h1>
+          <h1 className="break-words text-2xl font-bold tracking-tight text-gray-900 sm:text-2xl sm:text-3xl lg:text-4xl">
+  Manažérsky dashboard
+</h1>
 
-          <p className="mt-3 text-gray-500">
+          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-gray-600 sm:text-base">
             Prehľad anonymného hodnotenia zamestnancov sociálneho úseku.
           </p>
           <div className="mt-6">
@@ -1013,12 +1016,12 @@ const allBenchmarkCategories = Array.from(
     Hodnotiace obdobie
   </p>
 
-  <div className="flex flex-wrap gap-3">
+  <div className="flex max-w-full flex-wrap gap-2 sm:gap-3">
     {(periods || []).map((period: any) => (
       <Link
         key={period.id}
         href={`/admin?period=${period.id}`}
-        className={`rounded-xl border px-4 py-2 font-semibold transition ${
+        className={`inline-flex min-h-11 items-center justify-center rounded-xl border px-3 py-2 text-center text-sm font-semibold transition sm:px-4 sm:text-base ${
           selectedPeriod?.id === period.id
             ? "border-[#df4a33] bg-[#df4a33] text-white"
             : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
@@ -1031,10 +1034,10 @@ const allBenchmarkCategories = Array.from(
 </div>
         </div>
 
-        <div className="flex flex-wrap gap-3">
+        <div className="grid w-full gap-3 sm:grid-cols-2 lg:w-auto lg:min-w-[360px]">
   <Link
     href="/admin/trends"
-    className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+   className="inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-gray-300 bg-white px-4 py-3 text-center text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
   >
     Trendy medzi rokmi
   </Link>
@@ -1043,97 +1046,97 @@ const allBenchmarkCategories = Array.from(
     href={`/admin/print-report?period=${selectedPeriodId || ""}`}
     target="_blank"
     rel="noopener noreferrer"
-    className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+    className="inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-gray-300 bg-white px-4 py-3 text-center text-sm font-semibold leading-snug text-gray-700 transition hover:bg-gray-50"
   >
     Vytlačiť celkový manažérsky report
   </a>
 </div>
-</div>
+</header>
 
-      <div className="mt-8 grid gap-5 md:grid-cols-2 xl:grid-cols-3">
-  <div className="rounded-2xl border bg-white p-6 shadow-sm">
+      <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 xl:grid-cols-4">
+  <div className="rounded-2xl border bg-white p-5 sm:p-6 shadow-sm">
     <p className="text-gray-500">Sledovaní zamestnanci</p>
-    <p className="mt-2 text-3xl font-bold">
+    <p className="mt-2 text-2xl sm:text-3xl font-bold">
       {employees?.length || 0}
     </p>
   </div>
 
-  <div className="rounded-2xl border bg-white p-6 shadow-sm">
+  <div className="rounded-2xl border bg-white p-5 sm:p-6 shadow-sm">
     <p className="text-gray-500">Hodnotení zamestnanci</p>
-    <p className="mt-2 text-3xl font-bold">
+    <p className="mt-2 text-2xl sm:text-3xl font-bold">
       {evaluatedEmployees.length}
     </p>
   </div>
 
-  <div className="rounded-2xl border bg-white p-6 shadow-sm">
+  <div className="rounded-2xl border bg-white p-5 sm:p-6 shadow-sm">
     <p className="text-gray-500">Odoslané hodnotenia</p>
-    <p className="mt-2 text-3xl font-bold">
+    <p className="mt-2 text-2xl sm:text-3xl font-bold">
       {usedEvaluations || 0}
     </p>
   </div>
 
-  <div className="rounded-2xl border border-orange-200 bg-orange-50 p-6 shadow-sm">
+  <div className="rounded-2xl border border-orange-200 bg-orange-50 p-5 sm:p-6 shadow-sm">
     <p className="text-orange-800">Celkový vážený výsledok</p>
-    <p className="mt-2 text-3xl font-bold text-orange-700">
+    <p className="mt-2 text-2xl sm:text-3xl font-bold text-orange-700">
       {overallAverage !== null
         ? overallAverage.toFixed(2)
         : "—"}
     </p>
   </div>
 
-  <div className="rounded-2xl border border-blue-200 bg-blue-50 p-6 shadow-sm">
+  <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5 sm:p-6 shadow-sm">
     <p className="text-blue-800">Hodnotenie zamestnancov</p>
-    <p className="mt-2 text-3xl font-bold text-blue-700">
+    <p className="mt-2 text-2xl sm:text-3xl font-bold text-blue-700">
       {peerOverallAverage !== null
         ? peerOverallAverage.toFixed(2)
         : "—"}
     </p>
   </div>
 
-  <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-6 shadow-sm">
+  <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-5 sm:p-6 shadow-sm">
     <p className="text-indigo-800">Hodnotenie vedúcimi</p>
-    <p className="mt-2 text-3xl font-bold text-indigo-700">
+    <p className="mt-2 text-2xl sm:text-3xl font-bold text-indigo-700">
       {managerOverallAverage !== null
         ? managerOverallAverage.toFixed(2)
         : "—"}
     </p>
   </div>
 
-  <div className="rounded-2xl border border-violet-200 bg-violet-50 p-6 shadow-sm">
+  <div className="rounded-2xl border border-violet-200 bg-violet-50 p-5 sm:p-6 shadow-sm">
     <p className="text-violet-800">Sebahodnotenie</p>
-    <p className="mt-2 text-3xl font-bold text-violet-700">
+    <p className="mt-2 text-2xl sm:text-3xl font-bold text-violet-700">
       {selfOverallAverage !== null
         ? selfOverallAverage.toFixed(2)
         : "—"}
     </p>
   </div>
 
-  <div className="rounded-2xl border bg-white p-6 shadow-sm">
+  <div className="min-w-0 rounded-2xl border bg-white p-4 shadow-sm sm:p-6">
     <p className="text-gray-500">Počet anonymných kódov</p>
-    <p className="mt-2 text-3xl font-bold">
+    <p className="mt-2 text-2xl sm:text-3xl font-bold">
       {totalCodes || 0}
     </p>
   </div>
 </div>
 <section className="mt-10">
   <div className="mb-5">
-    <h2 className="text-2xl font-semibold">
+    <h2 className="break-words text-xl font-semibold text-gray-900 sm:text-2xl">
       Účasť zamestnancov na hodnotení
     </h2>
 
-    <p className="mt-2 text-gray-500">
+    <p className="mt-2 text-sm leading-relaxed text-gray-600 sm:text-base">
       Účasť je vypočítaná podľa zamestnancov, ktorí vo vybranom
       hodnotiacom období použili svoj hodnotiaci kód aspoň raz.
     </p>
   </div>
 
-  <div className="grid gap-5 md:grid-cols-3">
-    <div className="rounded-2xl border border-blue-200 bg-blue-50 p-6 shadow-sm">
+  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
+    <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5 sm:p-6 shadow-sm">
       <p className="text-gray-600">
         Celková účasť zamestnancov
       </p>
 
-      <p className="mt-2 text-4xl font-bold text-blue-700">
+      <p className="mt-2 text-3xl font-bold text-blue-700 sm:text-4xl">
         {overallParticipationPercentage
           .toFixed(1)
           .replace(".", ",")}{" "}
@@ -1146,28 +1149,30 @@ const allBenchmarkCategories = Array.from(
       </p>
     </div>
 
-    <div className="rounded-2xl border bg-white p-6 shadow-sm">
+    <div className="rounded-2xl border bg-white p-5 sm:p-6 shadow-sm">
       <p className="text-gray-500">
         Zúčastnení zamestnanci
       </p>
 
-      <p className="mt-2 text-3xl font-bold">
+      <p className="mt-2 text-2xl sm:text-3xl font-bold">
         {participatingEmployeesCount}
       </p>
     </div>
 
-    <div className="rounded-2xl border bg-white p-6 shadow-sm">
+    <div className="rounded-2xl border bg-white p-5 sm:p-6 shadow-sm">
       <p className="text-gray-500">
         Nezúčastnení zamestnanci
       </p>
 
-      <p className="mt-2 text-3xl font-bold">
+      <p className="mt-2 text-2xl sm:text-3xl font-bold">
         {nonParticipatingEmployeesCount}
       </p>
     </div>
   </div>
-
-  <div className="mt-6 overflow-x-auto rounded-2xl border bg-white shadow-sm">
+<p className="mb-2 mt-6 text-xs text-gray-500 sm:hidden">
+  Tabuľku môžete posúvať do strán.
+</p>
+  <div className="svida-table-scroll rounded-2xl border bg-white shadow-sm">
     <table className="w-full min-w-[750px] text-sm">
       <thead className="border-b bg-gray-50">
         <tr>
@@ -1237,20 +1242,22 @@ const allBenchmarkCategories = Array.from(
 </section>
 <section className="mt-10">
   <div className="mb-5">
-    <h2 className="text-2xl font-semibold">
+    <h2 className="break-words text-xl font-semibold text-gray-900 sm:text-2xl">
       Benchmark medzi úsekmi
     </h2>
 
-    <p className="mt-2 text-gray-500">
+    <p className="mt-2 text-sm leading-relaxed text-gray-600 sm:text-base">
       Porovnanie celkového výsledku a jednotlivých oblastí medzi úsekmi.
     </p>
   </div>
-
-  <div className="overflow-x-auto rounded-2xl border bg-white shadow-sm">
+<p className="mb-2 text-xs text-gray-500 sm:hidden">
+  Tabuľku môžete posúvať do strán.
+</p>
+  <div className="svida-table-scroll rounded-2xl border bg-white shadow-sm">
     <table className="w-full min-w-[1100px] text-sm">
       <thead className="border-b bg-gray-50">
         <tr>
-          <th className="sticky left-0 z-10 bg-gray-50 p-3 text-left">
+          <th className="sticky left-0 z-10 min-w-[170px] border-r bg-gray-50 p-3 text-left">
             Úsek
           </th>
 
@@ -1350,17 +1357,19 @@ const allBenchmarkCategories = Array.from(
 </section>
 <section className="mt-10">
   <div className="mb-5">
-    <h2 className="text-2xl font-semibold">
+    <h2 className="break-words text-xl font-semibold text-gray-900 sm:text-2xl">
       TOP 10 najlepšie hodnotených zamestnancov
     </h2>
 
-    <p className="mt-2 text-gray-500">
+    <p className="mt-2 text-sm leading-relaxed text-gray-600 sm:text-base">
       Poradie zamestnancov podľa celkového váženého výsledku vo vybranom
       hodnotiacom období.
     </p>
   </div>
-
-  <div className="overflow-x-auto rounded-2xl border bg-white shadow-sm">
+<p className="mb-2 text-xs text-gray-500 sm:hidden">
+  Tabuľku môžete posúvať do strán.
+</p>
+  <div className="svida-table-scroll rounded-2xl border bg-white shadow-sm">
     <table className="w-full min-w-[1000px] text-sm">
       <thead className="border-b bg-gray-50">
         <tr>
@@ -1493,17 +1502,17 @@ const allBenchmarkCategories = Array.from(
 </section>
 <section className="mt-10">
   <div className="mb-5">
-    <h2 className="text-2xl font-semibold">
+    <h2 className="break-words text-xl font-semibold text-gray-900 sm:text-2xl">
       TOP 10 najnižšie hodnotených zamestnancov
     </h2>
 
-    <p className="mt-2 text-gray-500">
+    <p className="mt-2 text-sm leading-relaxed text-gray-600 sm:text-base">
       Zamestnanci s najnižším celkovým váženým výsledkom vo vybranom
       hodnotiacom období.
     </p>
   </div>
 
-  <div className="overflow-x-auto rounded-2xl border bg-white shadow-sm">
+  <div className="svida-table-scroll rounded-2xl border bg-white shadow-sm">
     <table className="w-full min-w-[1000px] text-sm">
       <thead className="border-b bg-gray-50">
         <tr>
@@ -1644,8 +1653,8 @@ const allBenchmarkCategories = Array.from(
           Celkové výsledky hodnotenia
         </h2>
 
-        <div className="rounded-2xl border bg-white p-6 shadow-sm">
-          <div className="grid gap-5 md:grid-cols-3">
+        <div className="rounded-2xl border bg-white p-5 sm:p-6 shadow-sm">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
             <div className={`rounded-xl border p-5 ${overallLevel.cardClass}`}>
               <p className="text-sm text-gray-600">
                 Celkový priemer hodnotenia
@@ -1708,7 +1717,7 @@ const allBenchmarkCategories = Array.from(
                         key={employee.id}
                         className={`rounded-xl border p-4 ${level.cardClass}`}
                       >
-                        <div className="flex items-center justify-between gap-4">
+                        <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                           <div>
                             <p className="font-semibold">
                               {index + 1}. {employee.first_name}{" "}
@@ -1720,7 +1729,7 @@ const allBenchmarkCategories = Array.from(
                             </p>
                           </div>
 
-                          <div className="text-right">
+                          <div className="text-left sm:text-right">
                             <p
                               className={`text-2xl font-bold ${level.valueClass}`}
                             >
@@ -1760,7 +1769,7 @@ const allBenchmarkCategories = Array.from(
                         key={employee.id}
                         className={`rounded-xl border p-4 ${level.cardClass}`}
                       >
-                        <div className="flex items-center justify-between gap-4">
+                        <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                           <div>
                             <p className="font-semibold">
                               {index + 1}. {employee.first_name}{" "}
@@ -1772,7 +1781,7 @@ const allBenchmarkCategories = Array.from(
                             </p>
                           </div>
 
-                          <div className="text-right">
+                          <div className="text-left sm:text-right">
                             <p
                               className={`text-2xl font-bold ${level.valueClass}`}
                             >
@@ -1974,7 +1983,7 @@ const allBenchmarkCategories = Array.from(
             return (
               <div
                 key={employee.id}
-                className="rounded-2xl border bg-white p-6 shadow-sm"
+                className="rounded-2xl border bg-white p-5 sm:p-6 shadow-sm"
               >
                 <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                   <div>
@@ -1992,7 +2001,7 @@ const allBenchmarkCategories = Array.from(
 />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 text-right md:grid-cols-5">
+                  <div className="grid grid-cols-2 gap-3 text-left sm:gap-4 md:grid-cols-3 lg:grid-cols-5 lg:text-right">
   <div>
     <p className="text-sm text-gray-500">Výsledok</p>
 
@@ -2294,6 +2303,7 @@ const allBenchmarkCategories = Array.from(
           })}
         </div>
       </section>
+          </div>
     </main>
   );
 }
