@@ -261,9 +261,9 @@ export default function EvaluationForm({
     questions.forEach((question) => {
       const categoryRelation = question.evaluation_categories;
 
-const categoryName = Array.isArray(categoryRelation)
-  ? categoryRelation[0]?.name || "Ostatné otázky"
-  : categoryRelation?.name || "Ostatné otázky";
+      const categoryName = Array.isArray(categoryRelation)
+        ? categoryRelation[0]?.name || "Ostatné otázky"
+        : categoryRelation?.name || "Ostatné otázky";
 
       if (!groups[categoryName]) {
         groups[categoryName] = [];
@@ -328,14 +328,47 @@ const categoryName = Array.isArray(categoryRelation)
       return;
     }
 
-    setCurrentStep((step) => Math.min(step + 1, totalSteps - 1));
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    const nextStep = Math.min(currentStep + 1, totalSteps - 1);
+    const firstQuestionId =
+      groupedQuestions[nextStep]?.questions[0]?.id;
+
+    setCurrentStep(nextStep);
+
+    window.setTimeout(() => {
+      if (!firstQuestionId) {
+        return;
+      }
+
+      document
+        .getElementById(`question-${firstQuestionId}`)
+        ?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+    }, 200);
   }
 
   function goBack() {
     clearValidation();
-    setCurrentStep((step) => Math.max(step - 1, 0));
-    window.scrollTo({ top: 0, behavior: "smooth" });
+
+    const previousStep = Math.max(currentStep - 1, 0);
+    const firstQuestionId =
+      groupedQuestions[previousStep]?.questions[0]?.id;
+
+    setCurrentStep(previousStep);
+
+    window.setTimeout(() => {
+      if (!firstQuestionId) {
+        return;
+      }
+
+      document
+        .getElementById(`question-${firstQuestionId}`)
+        ?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+    }, 200);
   }
 
   async function handleFormSubmit(event: FormEvent<HTMLFormElement>) {
@@ -370,7 +403,7 @@ const categoryName = Array.isArray(categoryRelation)
             behavior: "smooth",
             block: "center",
           });
-      }, 150);
+      }, 200);
 
       return;
     }
@@ -697,7 +730,7 @@ const categoryName = Array.isArray(categoryRelation)
             <div
               id={`question-${question.id}`}
               key={question.id}
-              className={`scroll-mt-32 rounded-2xl border p-4 transition sm:p-6 ${
+              className={`scroll-mt-36 rounded-2xl border p-4 transition sm:scroll-mt-40 sm:p-6 ${
                 isMissing
                   ? "border-red-500 bg-red-50"
                   : categoryStyle.cardClass
