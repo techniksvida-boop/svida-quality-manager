@@ -61,61 +61,112 @@ export default async function Home() {
     .order("last_name");
 
   return (
-    <main className="max-w-6xl mx-auto p-8">
-      <div className="mb-8 flex justify-center">
-        <img
-          src="/logo-svida.jpg"
-          alt="Senior dom Svida"
-          className="h-24 w-auto"
-        />
-      </div>
+    <main className="svida-page svida-page-bg">
+      <div className="svida-container">
+        <header className="mb-8 text-center sm:mb-10">
+          <div className="mb-5 flex justify-center sm:mb-6">
+            <img
+              src="/logo-svida.jpg"
+              alt="Senior dom Svida"
+              className="h-auto w-full max-w-[180px] object-contain sm:max-w-[220px]"
+            />
+          </div>
 
-      <div className="mb-10 text-center">
-        <h1 className="text-4xl font-bold">Svida Quality Manager</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl lg:text-4xl">
+            Svida Quality Manager
+          </h1>
 
-        <p className="mt-2 text-gray-500">
-          Anonymné hodnotenie zamestnancov
-        </p>
-      </div>
+          <p className="mt-2 text-sm text-gray-500 sm:text-base">
+            Anonymné hodnotenie zamestnancov
+          </p>
+        </header>
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {employees?.map((employee: any) => {
-          const departmentName = (employee.departments as any)?.name || "Bez úseku";
+        {!employees || employees.length === 0 ? (
+          <div className="rounded-2xl border border-gray-200 bg-white p-6 text-center shadow-sm sm:p-8">
+            <p className="text-sm text-gray-600 sm:text-base">
+              Momentálne nie sú dostupní žiadni zamestnanci na hodnotenie.
+            </p>
+          </div>
+        ) : (
+          <section
+            aria-label="Zoznam zamestnancov"
+            className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 lg:gap-6"
+          >
+            {employees.map((employee: any) => {
+              const departmentName =
+                (employee.departments as any)?.name || "Bez úseku";
 
-          const departmentStyle = DEPARTMENT_STYLES[departmentName] || {
-            cardClass: "bg-white border border-gray-200",
-            badgeClass: "bg-gray-100 text-gray-600",
-            titleClass: "text-gray-900",
-            linkClass: "text-gray-700",
-            hoverClass: "hover:border-gray-300 hover:bg-gray-50",
-          };
+              const departmentStyle = DEPARTMENT_STYLES[departmentName] || {
+                cardClass: "bg-white border border-gray-200",
+                badgeClass: "bg-gray-100 text-gray-600",
+                titleClass: "text-gray-900",
+                linkClass: "text-gray-700",
+                hoverClass: "hover:border-gray-300 hover:bg-gray-50",
+              };
 
-          return (
-            <Link
-              key={employee.id}
-              href={`/employee/${employee.id}`}
-              className={`rounded-2xl p-6 shadow-sm transition ${departmentStyle.cardClass} ${departmentStyle.hoverClass}`}
-            >
-              <div
-                className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${departmentStyle.badgeClass}`}
-              >
-                {departmentName}
-              </div>
+              return (
+                <Link
+                  key={employee.id}
+                  href={`/employee/${employee.id}`}
+                  className={`
+                    group flex min-h-[180px] min-w-0 flex-col
+                    rounded-2xl p-5 shadow-sm
+                    transition duration-200
+                    focus-visible:outline-none
+                    focus-visible:ring-2
+                    focus-visible:ring-[var(--svida-primary)]
+                    focus-visible:ring-offset-2
+                    active:scale-[0.99]
+                    sm:min-h-[200px] sm:p-6
+                    ${departmentStyle.cardClass}
+                    ${departmentStyle.hoverClass}
+                  `}
+                >
+                  <div
+                    className={`
+                      inline-flex max-w-full self-start
+                      rounded-full px-3 py-1.5
+                      text-xs font-semibold leading-tight
+                      ${departmentStyle.badgeClass}
+                    `}
+                  >
+                    <span className="truncate">{departmentName}</span>
+                  </div>
 
-              <h2 className={`mt-4 text-xl font-semibold ${departmentStyle.titleClass}`}>
-                {employee.first_name} {employee.last_name}
-              </h2>
+                  <h2
+                    className={`
+                      mt-4 break-words text-lg font-semibold leading-snug
+                      sm:text-xl
+                      ${departmentStyle.titleClass}
+                    `}
+                  >
+                    {employee.first_name} {employee.last_name}
+                  </h2>
 
-              <p className="mt-2 text-sm text-gray-600">
-                {(employee.positions as any)?.name}
-              </p>
+                  <p className="mt-2 break-words text-sm leading-relaxed text-gray-600">
+                    {(employee.positions as any)?.name || "Pracovná pozícia neuvedená"}
+                  </p>
 
-              <div className={`mt-5 font-medium ${departmentStyle.linkClass}`}>
-                Otvoriť hodnotenie →
-              </div>
-            </Link>
-          );
-        })}
+                  <div
+                    className={`
+                      mt-auto pt-5 text-sm font-semibold
+                      sm:text-base
+                      ${departmentStyle.linkClass}
+                    `}
+                  >
+                    Otvoriť hodnotenie
+                    <span
+                      aria-hidden="true"
+                      className="ml-1 inline-block transition-transform group-hover:translate-x-1"
+                    >
+                      →
+                    </span>
+                  </div>
+                </Link>
+              );
+            })}
+          </section>
+        )}
       </div>
     </main>
   );
