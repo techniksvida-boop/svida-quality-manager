@@ -337,6 +337,261 @@ function EmployeeResultsChart({
   );
 }
 
+function CategoryResultsCharts({
+  categories,
+}: {
+  categories: Array<{
+    categoryName: string;
+    values: Array<{
+      periodId: string;
+      periodName: string;
+      average: number | null;
+    }>;
+  }>;
+}) {
+  if (categories.length === 0) {
+    return (
+      <div className="rounded-xl border border-gray-200 bg-gray-50 p-8 text-center text-gray-600">
+        Pre zamestnanca zatiaľ nie sú dostupné výsledky
+        jednotlivých oblastí.
+      </div>
+    );
+  }
+
+  const chartWidth = 600;
+  const chartHeight = 250;
+  const paddingLeft = 55;
+  const paddingRight = 30;
+  const paddingTop = 30;
+  const paddingBottom = 65;
+
+  const plotWidth =
+    chartWidth - paddingLeft - paddingRight;
+
+  const plotHeight =
+    chartHeight - paddingTop - paddingBottom;
+
+  const minimumScore = 1;
+  const maximumScore = 5;
+
+  function getY(score: number) {
+    const normalized =
+      (score - minimumScore) /
+      (maximumScore - minimumScore);
+
+    return (
+      paddingTop +
+      plotHeight -
+      normalized * plotHeight
+    );
+  }
+
+  const yAxisValues = [1, 2, 3, 4, 5];
+
+  return (
+    <div className="grid gap-5 lg:grid-cols-2">
+      {categories.map((category) => {
+        const validValues = category.values.filter(
+          (
+            value
+          ): value is {
+            periodId: string;
+            periodName: string;
+            average: number;
+          } =>
+            value.average !== null &&
+            Number.isFinite(value.average)
+        );
+
+        function getX(index: number) {
+          if (validValues.length === 1) {
+            return paddingLeft + plotWidth / 2;
+          }
+
+          return (
+            paddingLeft +
+            (index / (validValues.length - 1)) *
+              plotWidth
+          );
+        }
+
+        const points = validValues
+          .map(
+            (value, index) =>
+              `${getX(index)},${getY(value.average)}`
+          )
+          .join(" ");
+
+        return (
+          <div
+            key={category.categoryName}
+            className="rounded-2xl border bg-white p-5 shadow-sm"
+          >
+            <h3 className="font-semibold text-gray-900">
+              {category.categoryName}
+            </h3>
+
+            {validValues.length > 0 ? (
+              <div className="mt-4 overflow-x-auto">
+                <svg
+                  viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+                  className="w-full min-w-[520px]"
+                  role="img"
+                  aria-label={`Vývoj výsledkov oblasti ${category.categoryName}`}
+                >
+                  <rect
+                    x="0"
+                    y="0"
+                    width={chartWidth}
+                    height={chartHeight}
+                    fill="#ffffff"
+                  />
+
+                  {yAxisValues.map((value) => {
+                    const y = getY(value);
+
+                    return (
+                      <g key={value}>
+                        <line
+                          x1={paddingLeft}
+                          y1={y}
+                          x2={
+                            chartWidth -
+                            paddingRight
+                          }
+                          y2={y}
+                          stroke="#e5e7eb"
+                          strokeWidth="1"
+                        />
+
+                        <text
+                          x={paddingLeft - 14}
+                          y={y + 4}
+                          textAnchor="end"
+                          fontSize="12"
+                          fill="#6b7280"
+                        >
+                          {value
+                            .toFixed(1)
+                            .replace(".", ",")}
+                        </text>
+                      </g>
+                    );
+                  })}
+
+                  <line
+                    x1={paddingLeft}
+                    y1={paddingTop}
+                    x2={paddingLeft}
+                    y2={
+                      chartHeight -
+                      paddingBottom
+                    }
+                    stroke="#9ca3af"
+                    strokeWidth="1.5"
+                  />
+
+                  <line
+                    x1={paddingLeft}
+                    y1={
+                      chartHeight -
+                      paddingBottom
+                    }
+                    x2={
+                      chartWidth -
+                      paddingRight
+                    }
+                    y2={
+                      chartHeight -
+                      paddingBottom
+                    }
+                    stroke="#9ca3af"
+                    strokeWidth="1.5"
+                  />
+
+                  {validValues.length > 1 && (
+                    <polyline
+                      points={points}
+                      fill="none"
+                      stroke="#2563eb"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  )}
+
+                  {validValues.map(
+                    (value, index) => {
+                      const x = getX(index);
+                      const y = getY(
+                        value.average
+                      );
+
+                      return (
+                        <g key={value.periodId}>
+                          <circle
+                            cx={x}
+                            cy={y}
+                            r="6"
+                            fill="#2563eb"
+                            stroke="#ffffff"
+                            strokeWidth="2"
+                          />
+
+                          <text
+                            x={x}
+                            y={y - 13}
+                            textAnchor="middle"
+                            fontSize="12"
+                            fontWeight="700"
+                            fill="#111827"
+                          >
+                            {formatScore(
+                              value.average
+                            )}
+                          </text>
+
+                          <text
+                            x={x}
+                            y={
+                              chartHeight -
+                              paddingBottom +
+                              25
+                            }
+                            textAnchor="middle"
+                            fontSize="11"
+                            fontWeight="600"
+                            fill="#374151"
+                          >
+                            {value.periodName}
+                          </text>
+                        </g>
+                      );
+                    }
+                  )}
+                </svg>
+              </div>
+            ) : (
+              <p className="mt-4 rounded-xl bg-gray-50 p-4 text-sm text-gray-600">
+                Pre túto oblasť zatiaľ nie sú
+                dostupné výsledky.
+              </p>
+            )}
+
+            {validValues.length === 1 && (
+              <p className="mt-3 text-sm text-gray-500">
+                Vývojová čiara sa zobrazí po
+                získaní výsledku z ďalšieho
+                hodnotiaceho obdobia.
+              </p>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default async function EmployeeCardPage({
   params,
 }: {
@@ -385,20 +640,52 @@ export default async function EmployeeCardPage({
       .eq("is_active", true);
 
   const { data: evaluations, error: evaluationsError } =
-    await supabase
-      .from("evaluations")
-      .select(`
-        id,
-        period_id,
-        evaluation_type,
-        evaluation_type_id,
-        evaluation_answers(score)
-      `)
-      .eq("evaluated_employee_id", employeeId)
-      .eq("is_submitted", true);
+  await supabase
+    .from("evaluations")
+    .select(`
+      id,
+      period_id,
+      evaluation_type,
+      evaluation_type_id,
+      evaluation_answers(
+        score,
+        question_id
+      )
+    `)
+    .eq("evaluated_employee_id", employeeId)
+    .eq("is_submitted", true);
+
+    const { data: questions, error: questionsError } =
+  await supabase
+    .from("evaluation_questions")
+    .select(`
+      id,
+      evaluation_categories(name)
+    `)
+    .eq("is_active", true);
 
   const hasDataError =
-    periodsError || typesError || evaluationsError;
+  periodsError ||
+  typesError ||
+  evaluationsError ||
+  questionsError;
+
+  const questionCategoryMap = new Map<string, string>();
+
+(questions || []).forEach((question: any) => {
+  const categoryName = Array.isArray(
+    question.evaluation_categories
+  )
+    ? question.evaluation_categories[0]?.name ||
+      "Bez kategórie"
+    : question.evaluation_categories?.name ||
+      "Bez kategórie";
+
+  questionCategoryMap.set(
+    question.id,
+    categoryName
+  );
+});
 
   const periodResults = (periods || []).map(
     (period: any) => {
@@ -493,6 +780,111 @@ export default async function EmployeeCardPage({
         (type: any) => type.code === "manager"
       );
 
+      const categoryTypeStats: Record<
+  string,
+  Record<
+    string,
+    {
+      total: number;
+      count: number;
+      weight: number;
+    }
+  >
+> = {};
+
+periodEvaluations.forEach((evaluation: any) => {
+  const evaluationType = (evaluationTypes || []).find(
+    (type: any) =>
+      type.id === evaluation.evaluation_type_id ||
+      type.code === evaluation.evaluation_type
+  );
+
+  if (!evaluationType) {
+    return;
+  }
+
+  (
+    evaluation.evaluation_answers || []
+  ).forEach((answer: any) => {
+    const categoryName =
+      questionCategoryMap.get(answer.question_id) ||
+      "Bez kategórie";
+
+    const score = Number(answer.score);
+
+    if (!Number.isFinite(score)) {
+      return;
+    }
+
+    if (!categoryTypeStats[categoryName]) {
+      categoryTypeStats[categoryName] = {};
+    }
+
+    if (
+      !categoryTypeStats[categoryName][
+        evaluationType.code
+      ]
+    ) {
+      categoryTypeStats[categoryName][
+        evaluationType.code
+      ] = {
+        total: 0,
+        count: 0,
+        weight: Number(evaluationType.weight || 0),
+      };
+    }
+
+    categoryTypeStats[categoryName][
+      evaluationType.code
+    ].total += score;
+
+    categoryTypeStats[categoryName][
+      evaluationType.code
+    ].count += 1;
+  });
+});
+
+const categoryResults = Object.entries(
+  categoryTypeStats
+)
+  .map(([categoryName, typeStats]) => {
+    const availableCategoryTypes = Object.values(
+      typeStats
+    ).filter(
+      (stats) =>
+        stats.count > 0 &&
+        stats.weight > 0
+    );
+
+    const categoryWeight =
+      availableCategoryTypes.reduce(
+        (sum, stats) => sum + stats.weight,
+        0
+      );
+
+    const categoryAverage =
+      categoryWeight > 0
+        ? availableCategoryTypes.reduce(
+            (sum, stats) =>
+              sum +
+              (stats.total / stats.count) *
+                stats.weight,
+            0
+          ) / categoryWeight
+        : null;
+
+    return {
+      categoryName,
+      average: categoryAverage,
+    };
+  })
+  .sort((a, b) =>
+    a.categoryName.localeCompare(
+      b.categoryName,
+      "sk"
+    )
+  );
+
       return {
         periodId: period.id,
         periodName: period.name,
@@ -504,6 +896,7 @@ export default async function EmployeeCardPage({
         selfAverage: self?.average ?? null,
         managerAverage: manager?.average ?? null,
         evaluationCount: periodEvaluations.length,
+categoryResults,
       };
     }
   );
@@ -511,6 +904,37 @@ export default async function EmployeeCardPage({
   const validResults = periodResults.filter(
     (period: any) => period.weightedScore !== null
   );
+  const categoryNames = Array.from(
+  new Set(
+    periodResults.flatMap((period: any) =>
+      (period.categoryResults || []).map(
+        (category: any) => category.categoryName
+      )
+    )
+  )
+).sort((a, b) =>
+  String(a).localeCompare(String(b), "sk")
+);
+
+const categoryChartData = categoryNames.map(
+  (categoryName) => ({
+    categoryName,
+    values: periodResults.map((period: any) => {
+      const category = (
+        period.categoryResults || []
+      ).find(
+        (item: any) =>
+          item.categoryName === categoryName
+      );
+
+      return {
+        periodId: period.periodId,
+        periodName: period.periodName,
+        average: category?.average ?? null,
+      };
+    }),
+  })
+);
 
   const allScores = validResults.map(
     (period: any) => Number(period.weightedScore)
@@ -667,7 +1091,24 @@ export default async function EmployeeCardPage({
           načítať. Skontroluj pripojenie k databáze.
         </div>
       )}
+<section className="mt-10">
+  <div>
+    <h2 className="text-2xl font-semibold text-gray-900">
+      Vývoj výsledkov podľa oblastí
+    </h2>
 
+    <p className="mt-2 text-gray-600">
+      Vývoj priemerného hodnotenia jednotlivých oblastí
+      naprieč hodnotiacimi obdobiami.
+    </p>
+  </div>
+
+  <div className="mt-5">
+    <CategoryResultsCharts
+      categories={categoryChartData}
+    />
+  </div>
+</section>
       <section className="mt-10">
         <div>
           <h2 className="text-2xl font-semibold text-gray-900">
