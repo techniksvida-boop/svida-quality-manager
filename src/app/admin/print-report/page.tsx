@@ -283,6 +283,45 @@ function getCompactBenchmarkScoreStyle(score: number) {
   };
 }
 
+function getParticipationScoreStyle(percentage: number) {
+  if (percentage >= 80) {
+    return {
+      display: "inline-block",
+      minWidth: "58px",
+      padding: "3px 7px",
+      borderRadius: "12px",
+      background: "#dcfce7",
+      color: "#166534",
+      fontWeight: "bold",
+      textAlign: "center" as const,
+    };
+  }
+
+  if (percentage >= 50) {
+    return {
+      display: "inline-block",
+      minWidth: "58px",
+      padding: "3px 7px",
+      borderRadius: "12px",
+      background: "#ffedd5",
+      color: "#9a3412",
+      fontWeight: "bold",
+      textAlign: "center" as const,
+    };
+  }
+
+  return {
+    display: "inline-block",
+    minWidth: "58px",
+    padding: "3px 7px",
+    borderRadius: "12px",
+    background: "#fee2e2",
+    color: "#991b1b",
+    fontWeight: "bold",
+    textAlign: "center" as const,
+  };
+}
+
 export default async function PrintReportPage({
   searchParams,
 }: {
@@ -372,7 +411,100 @@ export default async function PrintReportPage({
 
   const { count: usedEvaluations } = await usedEvaluationsQuery;
 
-  const questionMap = new Map();
+const { data: periodUsage } = selectedPeriodId
+  ? await supabase
+      .from("voting_code_usage")
+      .select("voting_code_id")
+      .eq("period_id", selectedPeriodId)
+  : { data: [] };
+
+const usedVotingCodeIds = Array.from(
+  new Set(
+    (periodUsage || [])
+      .map((usage: any) => usage.voting_code_id)
+      .filter(Boolean)
+  )
+);
+
+const { data: participantCodes } =
+  usedVotingCodeIds.length > 0
+    ? await supabase
+        .from("voting_codes")
+        .select("id, employee_id")
+        .in("id", usedVotingCodeIds)
+    : { data: [] };
+
+const participatingEmployeeIds = new Set(
+  (participantCodes || [])
+    .map((code: any) => code.employee_id)
+    .filter(Boolean)
+);
+
+const totalActiveEmployees = employees?.length || 0;
+
+const participatingEmployeesCount = (employees || []).filter(
+  (employee: any) => participatingEmployeeIds.has(employee.id)
+).length;
+
+const nonParticipatingEmployeesCount = Math.max(
+  totalActiveEmployees - participatingEmployeesCount,
+  0
+);
+
+const overallParticipationPercentage =
+  totalActiveEmployees > 0
+    ? (participatingEmployeesCount / totalActiveEmployees) * 100
+    : 0;
+
+const departmentParticipationMap: Record<
+  string,
+  {
+    departmentName: string;
+    totalEmployees: number;
+    participatingEmployees: number;
+  }
+> = {};
+
+(employees || []).forEach((employee: any) => {
+  const departmentName = getDepartmentName(employee);
+
+  if (!departmentParticipationMap[departmentName]) {
+    departmentParticipationMap[departmentName] = {
+      departmentName,
+      totalEmployees: 0,
+      participatingEmployees: 0,
+    };
+  }
+
+  departmentParticipationMap[departmentName].totalEmployees += 1;
+
+  if (participatingEmployeeIds.has(employee.id)) {
+    departmentParticipationMap[
+      departmentName
+    ].participatingEmployees += 1;
+  }
+});
+
+const departmentParticipation = Object.values(
+  departmentParticipationMap
+)
+  .map((department) => ({
+    ...department,
+    nonParticipatingEmployees:
+      department.totalEmployees -
+      department.participatingEmployees,
+    percentage:
+      department.totalEmployees > 0
+        ? (department.participatingEmployees /
+            department.totalEmployees) *
+          100
+        : 0,
+  }))
+  .sort((a, b) =>
+    a.departmentName.localeCompare(b.departmentName, "sk")
+  );
+
+const questionMap = new Map();
 
   (questions || []).forEach((question: any) => {
     questionMap.set(question.id, {
@@ -744,11 +876,140 @@ export default async function PrintReportPage({
             </td>
           </tr>
         </tbody>
-      </table>
+            </table>
 
       <section style={printSectionStyle}>
         <h2 style={sectionTitle}>
-          2. Benchmark medzi úsekmi
+          2. Účasť zamestnancov na hodnotení
+        </h2>
+
+        <p
+          style={{
+            marginTop: "0",
+            marginBottom: "10px",
+          }}
+        >
+          Účasť je vypočítaná podľa zamestnancov, ktorí vo vybranom
+          hodnotiacom období použili svoj hodnotiaci kód aspoň raz.
+        </p>
+
+        <table style={tableStyle}>
+          <tbody>
+            <tr>
+              <td style={cellTitle}>
+                Celková účasť zamestnancov
+              </td>
+              <td style={cellValue}>
+                <strong>
+                  {overallParticipationPercentage
+                    .toFixed(1)
+                    .replace(".", ",")}{" "}
+                  %
+                </strong>
+              </td>
+            </tr>
+
+            <tr>
+              <td style={cellTitle}>
+                Zúčastnení zamestnanci
+              </td>
+              <td style={cellValue}>
+                {participatingEmployeesCount}
+              </td>
+            </tr>
+
+            <tr>
+              <td style={cellTitle}>
+                Nezúčastnení zamestnanci
+              </td>
+              <td style={cellValue}>
+                {nonParticipatingEmployeesCount}
+              </td>
+            </tr>
+
+            <tr>
+              <td style={cellTitle}>
+                Celkový počet aktívnych zamestnancov
+              </td>
+              <td style={cellValue}>
+                {totalActiveEmployees}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3 style={subSectionTitle}>
+          Účasť podľa úsekov
+        </h3>
+
+        {departmentParticipation.length > 0 ? (
+          <table style={tableStyle}>
+            <thead>
+              <tr>
+                <th style={cellTitle}>Úsek</th>
+                <th style={centeredCellTitle}>
+                  Počet zamestnancov
+                </th>
+                <th style={centeredCellTitle}>
+                  Zúčastnení
+                </th>
+                <th style={centeredCellTitle}>
+                  Nezúčastnení
+                </th>
+                <th style={centeredCellTitle}>
+                  Účasť
+                </th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {departmentParticipation.map((department) => (
+                <tr key={department.departmentName}>
+                  <td style={cellValue}>
+                    <strong>
+                      {department.departmentName}
+                    </strong>
+                  </td>
+
+                  <td style={centeredCellValue}>
+                    {department.totalEmployees}
+                  </td>
+
+                  <td style={centeredCellValue}>
+                    {department.participatingEmployees}
+                  </td>
+
+                  <td style={centeredCellValue}>
+                    {department.nonParticipatingEmployees}
+                  </td>
+
+                  <td style={centeredCellValue}>
+                    <span
+                      style={getParticipationScoreStyle(
+                        department.percentage
+                      )}
+                    >
+                      {department.percentage
+                        .toFixed(1)
+                        .replace(".", ",")}{" "}
+                      %
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <p>
+            Zatiaľ nie sú dostupné údaje o účasti
+            zamestnancov podľa úsekov.
+          </p>
+        )}
+      </section>
+
+      <section style={printSectionStyle}>
+        <h2 style={sectionTitle}>
+          3. Benchmark medzi úsekmi
         </h2>
 
         <p
@@ -881,7 +1142,7 @@ export default async function PrintReportPage({
       </section>
 
       <h2 style={sectionTitle}>
-        3. Poradie zamestnancov
+        4. Poradie zamestnancov
       </h2>
 
       <h3 style={subSectionTitle}>
@@ -981,7 +1242,7 @@ export default async function PrintReportPage({
       )}
 
       <h2 style={sectionTitle}>
-        4. Najsilnejšie oblasti
+        5. Najsilnejšie oblasti
       </h2>
 
       {strongestCategories.length > 0 ? (
@@ -1024,7 +1285,7 @@ export default async function PrintReportPage({
       )}
 
       <h2 style={sectionTitle}>
-        5. Najrizikovejšie oblasti
+        6. Najrizikovejšie oblasti
       </h2>
 
       {riskiestCategories.length > 0 ? (
@@ -1067,7 +1328,7 @@ export default async function PrintReportPage({
       )}
 
       <h2 style={sectionTitle}>
-        6. Podklad pre ročný plán vzdelávania
+        7. Podklad pre ročný plán vzdelávania
       </h2>
 
       {trainingPlanSummary.length > 0 ? (
@@ -1126,7 +1387,7 @@ export default async function PrintReportPage({
       )}
 
       <h2 style={sectionTitle}>
-        7. Záver manažéra kvality
+        8. Záver manažéra kvality
       </h2>
 
       {overallAverage !== null ? (
@@ -1155,7 +1416,7 @@ export default async function PrintReportPage({
       )}
 
       <h2 style={sectionTitle}>
-        8. Vyjadrenie / záver manažéra kvality
+        9. Vyjadrenie / záver manažéra kvality
       </h2>
 
       <div style={textBoxStyle}>
@@ -1339,6 +1600,18 @@ const compactBenchmarkCategoryCell = {
 const compactBenchmarkValueCell = {
   padding: "4px 2px",
   border: "1px solid #000",
+  textAlign: "center" as const,
+  verticalAlign: "middle" as const,
+};
+
+const centeredCellTitle = {
+  ...cellTitle,
+  textAlign: "center" as const,
+  verticalAlign: "middle" as const,
+};
+
+const centeredCellValue = {
+  ...cellValue,
   textAlign: "center" as const,
   verticalAlign: "middle" as const,
 };
