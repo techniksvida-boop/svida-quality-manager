@@ -26,6 +26,14 @@ function getPositionName(employee: any) {
   return employee.positions?.name || "";
 }
 
+function getDepartmentName(employee: any) {
+  if (Array.isArray(employee.departments)) {
+    return employee.departments[0]?.name || "Nezaradený úsek";
+  }
+
+  return employee.departments?.name || "Nezaradený úsek";
+}
+
 function getCategorySummary(
   employeesWithStats: any[]
 ): {
@@ -245,10 +253,16 @@ const selectedPeriod =
 
 const selectedPeriodId = selectedPeriod?.id;
   const { data: employees } = await supabase
-    .from("employees")
-    .select("id, first_name, last_name, positions(name)")
-    .eq("is_active", true)
-    .order("last_name");
+  .from("employees")
+  .select(`
+    id,
+    first_name,
+    last_name,
+    positions(name),
+    departments(name)
+  `)
+  .eq("is_active", true)
+  .order("last_name");
 
   const { data: evaluations } = selectedPeriodId
   ? await supabase
@@ -447,6 +461,102 @@ const average =
 
   const trainingPlanSummary = getTrainingPlanSummary(employeesWithStats);
 
+  const departmentBenchmarkMap: Record<
+  string,
+  {
+    departmentName: string;
+    employeeIds: Set<string>;
+    totalAverage: number;
+    averageCount: number;
+    categories: Record<
+      string,
+      {
+        total: number;
+        count: number;
+      }
+    >;
+  }
+> = {};
+
+employeesWithStats.forEach((employee: any) => {
+  if (employee.average === null) {
+    return;
+  }
+
+  const departmentName = getDepartmentName(employee);
+
+  if (!departmentBenchmarkMap[departmentName]) {
+    departmentBenchmarkMap[departmentName] = {
+      departmentName,
+      employeeIds: new Set<string>(),
+      totalAverage: 0,
+      averageCount: 0,
+      categories: {},
+    };
+  }
+
+  const department = departmentBenchmarkMap[departmentName];
+
+  department.employeeIds.add(employee.id);
+  department.totalAverage += Number(employee.average);
+  department.averageCount += 1;
+
+  Object.entries(employee.categoryStats).forEach(
+    ([categoryName, stats]: any) => {
+      if (!department.categories[categoryName]) {
+        department.categories[categoryName] = {
+          total: 0,
+          count: 0,
+        };
+      }
+
+      department.categories[categoryName].total += Number(stats.total);
+      department.categories[categoryName].count += Number(stats.count);
+    }
+  );
+});
+
+const departmentBenchmark = Object.values(departmentBenchmarkMap)
+  .map((department) => ({
+    departmentName: department.departmentName,
+    employeeCount: department.employeeIds.size,
+    overallAverage:
+      department.averageCount > 0
+        ? department.totalAverage / department.averageCount
+        : null,
+    categories: Object.fromEntries(
+      Object.entries(department.categories).map(
+        ([categoryName, stats]) => [
+          categoryName,
+          stats.count > 0 ? stats.total / stats.count : null,
+        ]
+      )
+    ) as Record<string, number | null>,
+  }))
+  .sort((a, b) => {
+    if (a.overallAverage === null && b.overallAverage === null) {
+      return 0;
+    }
+
+    if (a.overallAverage === null) {
+      return 1;
+    }
+
+    if (b.overallAverage === null) {
+      return -1;
+    }
+
+    return b.overallAverage - a.overallAverage;
+  });
+
+const benchmarkCategoryNames = Array.from(
+  new Set(
+    departmentBenchmark.flatMap((department) =>
+      Object.keys(department.categories)
+    )
+  )
+);
+
   return (
     <main style={pageStyle}>
       <script
@@ -519,7 +629,85 @@ const average =
         </tbody>
       </table>
 
-      <h2 style={sectionTitle}>2. Poradie zamestnancov</h2>
+      <h2 style={sectionTitle}>2. Benchmark medzi úsekmi</h2>
+
+<p style={{ marginTop: "0", marginBottom: "10px" }}>
+  Porovnanie celkového výsledku a jednotlivých oblastí medzi úsekmi.
+</p>
+
+{departmentBenchmark.length > 0 ? (
+  <div style={{ overflowX: "auto" }}>
+    <table style={benchmarkTableStyle}>
+      <thead>
+        <tr>
+          <th style={benchmarkHeaderCell}>Úsek</th>
+          <th style={benchmarkHeaderCell}>Celkový výsledok</th>
+          <th style={benchmarkHeaderCell}>Hodnotení zamestnanci</th>
+
+          {benchmarkCategoryNames.map((categoryName) => (
+            <th key={categoryName} style={benchmarkHeaderCell}>
+              {categoryName}
+            </th>
+          ))}
+        </tr>
+      </thead>
+
+      <tbody>
+        {departmentBenchmark.map((department) => (
+          <tr key={department.departmentName}>
+            <td style={benchmarkNameCell}>
+              {department.departmentName}
+            </td>
+
+            <td style={benchmarkCell}>
+              {department.overallAverage !== null ? (
+                <span
+                  style={getBenchmarkScoreStyle(
+                    department.overallAverage
+                  )}
+                >
+                  {department.overallAverage.toFixed(2)}
+                </span>
+              ) : (
+                "—"
+              )}
+            </td>
+
+            <td style={benchmarkCell}>
+              {department.employeeCount}
+            </td>
+
+            {benchmarkCategoryNames.map((categoryName) => {
+              const categoryAverage =
+                department.categories[categoryName] ?? null;
+
+              return (
+                <td
+                  key={`${department.departmentName}-${categoryName}`}
+                  style={benchmarkCell}
+                >
+                  {categoryAverage !== null ? (
+                    <span
+                      style={getBenchmarkScoreStyle(categoryAverage)}
+                    >
+                      {categoryAverage.toFixed(2)}
+                    </span>
+                  ) : (
+                    "—"
+                  )}
+                </td>
+              );
+            })}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+) : (
+  <p>Zatiaľ nie sú dostupné údaje na porovnanie úsekov.</p>
+)}
+
+<h2 style={sectionTitle}>3. Poradie zamestnancov</h2>
 
       <h3 style={subSectionTitle}>Najvyššie hodnotenie</h3>
 
@@ -732,6 +920,44 @@ const average =
   );
 }
 
+function getBenchmarkScoreStyle(score: number) {
+  if (score >= 4.1) {
+    return {
+      display: "inline-block",
+      minWidth: "52px",
+      padding: "4px 8px",
+      borderRadius: "16px",
+      background: "#dcfce7",
+      color: "#166534",
+      fontWeight: "bold",
+      textAlign: "center" as const,
+    };
+  }
+
+  if (score > 3) {
+    return {
+      display: "inline-block",
+      minWidth: "52px",
+      padding: "4px 8px",
+      borderRadius: "16px",
+      background: "#ffedd5",
+      color: "#9a3412",
+      fontWeight: "bold",
+      textAlign: "center" as const,
+    };
+  }
+
+  return {
+    display: "inline-block",
+    minWidth: "52px",
+    padding: "4px 8px",
+    borderRadius: "16px",
+    background: "#fee2e2",
+    color: "#991b1b",
+    fontWeight: "bold",
+    textAlign: "center" as const,
+  };
+}
 const pageStyle = {
   maxWidth: "1120px",
   margin: "0 auto",
@@ -785,4 +1011,37 @@ const textBoxStyle = {
   minHeight: "100px",
   marginTop: "8px",
   padding: "8px",
+};
+
+const benchmarkTableStyle = {
+  width: "100%",
+  borderCollapse: "collapse" as const,
+  marginTop: "8px",
+  marginBottom: "18px",
+  fontSize: "8pt",
+};
+
+const benchmarkHeaderCell = {
+  fontWeight: "bold",
+  padding: "6px",
+  border: "1px solid #000",
+  textAlign: "center" as const,
+  verticalAlign: "middle" as const,
+  background: "#f3f4f6",
+  minWidth: "95px",
+};
+
+const benchmarkNameCell = {
+  padding: "6px",
+  border: "1px solid #000",
+  verticalAlign: "middle" as const,
+  fontWeight: "bold",
+  minWidth: "130px",
+};
+
+const benchmarkCell = {
+  padding: "6px",
+  border: "1px solid #000",
+  verticalAlign: "middle" as const,
+  textAlign: "center" as const,
 };
