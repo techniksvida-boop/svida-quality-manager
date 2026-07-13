@@ -131,6 +131,91 @@ function getTrend(
   };
 }
 
+function getStatisticalSummary({
+  currentScore,
+  latestChange,
+  validPeriodCount,
+  strongestCategory,
+  weakestCategory,
+}: {
+  currentScore: number | null;
+  latestChange: number | null;
+  validPeriodCount: number;
+  strongestCategory:
+    | {
+        categoryName: string;
+        average: number | null;
+      }
+    | null;
+  weakestCategory:
+    | {
+        categoryName: string;
+        average: number | null;
+      }
+    | null;
+}) {
+  if (currentScore === null) {
+    return "Zamestnanec zatiaľ nemá dostupný výsledok hodnotenia.";
+  }
+
+  const sentences: string[] = [];
+
+  sentences.push(
+    `Zamestnanec dosiahol aktuálny celkový výsledok ${formatScore(
+      currentScore
+    )}.`
+  );
+
+  if (
+    strongestCategory &&
+    strongestCategory.average !== null
+  ) {
+    sentences.push(
+      `Najsilnejšou oblasťou je ${strongestCategory.categoryName} s výsledkom ${formatScore(
+        strongestCategory.average
+      )}.`
+    );
+  }
+
+  if (
+    weakestCategory &&
+    weakestCategory.average !== null
+  ) {
+    sentences.push(
+      `Najnižšie bola hodnotená oblasť ${weakestCategory.categoryName} s výsledkom ${formatScore(
+        weakestCategory.average
+      )}.`
+    );
+  }
+
+  if (
+    validPeriodCount < 2 ||
+    latestChange === null
+  ) {
+    sentences.push(
+      "Vývoj medzi hodnotiacimi obdobiami zatiaľ nie je možné vyhodnotiť."
+    );
+  } else if (latestChange > 0.05) {
+    sentences.push(
+      `Oproti predchádzajúcemu hodnotiacemu obdobiu sa výsledok zlepšil o ${formatChange(
+        latestChange
+      )} bodu.`
+    );
+  } else if (latestChange < -0.05) {
+    sentences.push(
+      `Oproti predchádzajúcemu hodnotiacemu obdobiu sa výsledok zhoršil o ${formatChange(
+        latestChange
+      )} bodu.`
+    );
+  } else {
+    sentences.push(
+      "Výsledok je oproti predchádzajúcemu hodnotiacemu obdobiu stabilný."
+    );
+  }
+
+  return sentences.join(" ");
+}
+
 function EmployeeResultsChart({
   results,
 }: {
@@ -1004,6 +1089,47 @@ const categoryChartData = categoryNames.map(
     validResults.length
   );
 
+  const latestCategoryResults =
+  latestResult?.categoryResults || [];
+
+const validLatestCategories =
+  latestCategoryResults.filter(
+    (category: any) =>
+      category.average !== null &&
+      Number.isFinite(category.average)
+  );
+
+const strongestCategory =
+  validLatestCategories.length > 0
+    ? validLatestCategories.reduce(
+        (best: any, current: any) =>
+          Number(current.average) >
+          Number(best.average)
+            ? current
+            : best
+      )
+    : null;
+
+const weakestCategory =
+  validLatestCategories.length > 0
+    ? validLatestCategories.reduce(
+        (worst: any, current: any) =>
+          Number(current.average) <
+          Number(worst.average)
+            ? current
+            : worst
+      )
+    : null;
+
+const statisticalSummary = getStatisticalSummary({
+  currentScore:
+    latestResult?.weightedScore ?? null,
+  latestChange,
+  validPeriodCount: validResults.length,
+  strongestCategory,
+  weakestCategory,
+});
+
   return (
     <main className="mx-auto max-w-7xl p-8">
       <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
@@ -1132,6 +1258,7 @@ const categoryChartData = categoryNames.map(
             </p>
           </div>
 
+
           <div className="rounded-2xl border bg-white p-5 shadow-sm">
             <p className="text-sm text-gray-500">
               Aktuálny výsledok
@@ -1244,6 +1371,15 @@ const categoryChartData = categoryNames.map(
             </p>
           </div>
         </div>
+        <div className="mt-5 rounded-2xl border border-blue-200 bg-blue-50 p-5 shadow-sm">
+  <h3 className="text-lg font-semibold text-gray-900">
+    Automatický štatistický sumár
+  </h3>
+
+  <p className="mt-3 leading-relaxed text-gray-700">
+    {statisticalSummary}
+  </p>
+</div>
       </section>
 
       <section className="mt-10">
