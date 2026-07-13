@@ -299,7 +299,7 @@ export default async function AdminResultsPage({
       </div>
 
       <div className="mt-8 overflow-x-auto rounded-xl border bg-white">
-        <table className="w-full min-w-[950px] text-sm">
+        <table className="w-full min-w-[1100px] text-sm">
           <thead className="border-b bg-gray-50">
             <tr>
               <th className="p-3 text-left">
@@ -311,8 +311,12 @@ export default async function AdminResultsPage({
               </th>
 
               <th className="p-3 text-center">
-                Hodnotenie zamestnancov
-              </th>
+  Počet hodnotení
+</th>
+
+<th className="p-3 text-center">
+  Karta zamestnanca
+</th>
 
               <th className="p-3 text-center">
                 Sebahodnotenie
@@ -414,8 +418,17 @@ export default async function AdminResultsPage({
                   </td>
 
                   <td className="p-3 text-center font-semibold">
-                    {result.totalEvaluations}
-                  </td>
+  {result.totalEvaluations}
+</td>
+
+<td className="p-3 text-center">
+  <Link
+    href={`/admin/employees/${result.employee.id}`}
+    className="inline-flex min-h-10 items-center justify-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+  >
+    Otvoriť kartu
+  </Link>
+</td>
                 </tr>
               );
             })}
