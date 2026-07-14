@@ -692,7 +692,7 @@ export default async function EmployeeCardPage({
         first_name,
         last_name,
         positions(name),
-        departments(name),
+        departments(id, name),
         is_active
       `)
       .eq("id", employeeId)
@@ -711,6 +711,37 @@ export default async function EmployeeCardPage({
   const departmentName = Array.isArray(employee.departments)
     ? employee.departments[0]?.name || "–"
     : employee.departments?.name || "–";
+    const departmentId = Array.isArray(employee.departments)
+  ? employee.departments[0]?.id || null
+  : employee.departments?.id || null;
+  const {
+  data: allEmployeesData,
+  error: allEmployeesError,
+} = await supabase
+  .from("employees")
+  .select(`
+    id,
+    departments(id, name)
+  `)
+  .eq("is_active", true);
+
+  const allEmployees = (allEmployeesData || []) as any[];
+
+const allEmployeeIds = allEmployees.map(
+  (item: any) => item.id
+);
+
+const departmentEmployeeIds = allEmployees
+  .filter((item: any) => {
+    const itemDepartmentId = Array.isArray(
+      item.departments
+    )
+      ? item.departments[0]?.id || null
+      : item.departments?.id || null;
+
+    return itemDepartmentId === departmentId;
+  })
+  .map((item: any) => item.id);
 
   const { data: periods, error: periodsError } =
     await supabase
@@ -753,7 +784,8 @@ export default async function EmployeeCardPage({
   periodsError ||
   typesError ||
   evaluationsError ||
-  questionsError;
+  questionsError ||
+  allEmployeesError;
 
   const questionCategoryMap = new Map<string, string>();
 
@@ -1031,6 +1063,158 @@ const categoryChartData = categoryNames.map(
     validResults.length > 0
       ? validResults[validResults.length - 1]
       : null;
+
+      const latestPeriodId =
+  latestResult?.periodId || null;
+
+const {
+  data: comparisonEvaluations,
+  error: comparisonEvaluationsError,
+} =
+  latestPeriodId && allEmployeeIds.length > 0
+    ? await supabase
+        .from("evaluations")
+        .select(`
+          id,
+          evaluated_employee_id,
+          evaluation_type,
+          evaluation_type_id,
+          evaluation_answers(
+            score,
+            question_id
+          )
+        `)
+        .eq("period_id", latestPeriodId)
+        .eq("is_submitted", true)
+        .in("evaluated_employee_id", allEmployeeIds)
+    : {
+        data: [],
+        error: null,
+      };
+      const comparisonEmployeeResults = allEmployeeIds.map(
+  (comparisonEmployeeId: string) => {
+    const employeeEvaluations = (
+      comparisonEvaluations || []
+    ).filter(
+      (evaluation: any) =>
+        evaluation.evaluated_employee_id ===
+        comparisonEmployeeId
+    );
+
+    const typeResults = (evaluationTypes || []).map(
+      (type: any) => {
+        const typeEvaluations =
+          employeeEvaluations.filter(
+            (evaluation: any) => {
+              if (evaluation.evaluation_type_id) {
+                return (
+                  evaluation.evaluation_type_id ===
+                  type.id
+                );
+              }
+
+              return (
+                evaluation.evaluation_type ===
+                type.code
+              );
+            }
+          );
+
+        const typeScores = typeEvaluations
+          .flatMap(
+            (evaluation: any) =>
+              evaluation.evaluation_answers || []
+          )
+          .map((answer: any) =>
+            Number(answer.score)
+          )
+          .filter((score: number) =>
+            Number.isFinite(score)
+          );
+
+        return {
+          code: type.code,
+          weight: Number(type.weight || 0),
+          average: average(typeScores),
+        };
+      }
+    );
+
+    const availableTypes = typeResults.filter(
+      (type: any) =>
+        type.average !== null &&
+        type.weight > 0
+    );
+
+    const availableWeight = availableTypes.reduce(
+      (sum: number, type: any) =>
+        sum + type.weight,
+      0
+    );
+
+    const weightedScore =
+      availableWeight > 0
+        ? availableTypes.reduce(
+            (sum: number, type: any) =>
+              sum +
+              Number(type.average) *
+                type.weight,
+            0
+          ) / availableWeight
+        : null;
+
+    return {
+      employeeId: comparisonEmployeeId,
+      weightedScore,
+    };
+  }
+);
+const validFacilityScores =
+  comparisonEmployeeResults
+    .map((result: any) => result.weightedScore)
+    .filter(
+      (score: number | null): score is number =>
+        score !== null &&
+        Number.isFinite(score)
+    );
+
+const facilityAverage =
+  average(validFacilityScores);
+
+const validDepartmentScores =
+  comparisonEmployeeResults
+    .filter((result: any) =>
+      departmentEmployeeIds.includes(
+        result.employeeId
+      )
+    )
+    .map((result: any) => result.weightedScore)
+    .filter(
+      (score: number | null): score is number =>
+        score !== null &&
+        Number.isFinite(score)
+    );
+
+const departmentAverage =
+  average(validDepartmentScores);
+
+const employeeCurrentScore =
+  comparisonEmployeeResults.find(
+    (result: any) =>
+      result.employeeId === employeeId
+  )?.weightedScore ?? null;
+
+const employeeVsDepartment =
+  employeeCurrentScore !== null &&
+  departmentAverage !== null
+    ? employeeCurrentScore - departmentAverage
+    : null;
+
+const employeeVsFacility =
+  employeeCurrentScore !== null &&
+  facilityAverage !== null
+    ? employeeCurrentScore - facilityAverage
+    : null;
 
   const previousResult =
     validResults.length > 1
@@ -1379,6 +1563,76 @@ const statisticalSummary = getStatisticalSummary({
   <p className="mt-3 leading-relaxed text-gray-700">
     {statisticalSummary}
   </p>
+</div>
+<div className="mt-5">
+  <h3 className="text-xl font-semibold text-gray-900">
+    Porovnanie s úsekom a zariadením
+  </h3>
+
+  <p className="mt-2 text-gray-600">
+    Porovnanie aktuálneho výsledku zamestnanca s priemerom jeho úseku a
+    priemerom celého zariadenia.
+  </p>
+
+  <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="rounded-2xl border border-blue-200 bg-blue-50 p-5 shadow-sm">
+      <p className="text-sm font-semibold text-blue-800">
+        Zamestnanec
+      </p>
+
+      <p className="mt-2 text-3xl font-bold text-blue-700">
+        {formatScore(employeeCurrentScore)}
+      </p>
+
+      <p className="mt-2 text-sm text-blue-900">
+        Aktuálny celkový vážený výsledok
+      </p>
+    </div>
+
+    <div className="rounded-2xl border bg-white p-5 shadow-sm">
+      <p className="text-sm font-semibold text-gray-600">
+        Priemer úseku
+      </p>
+
+      <p className="mt-2 text-3xl font-bold text-gray-900">
+        {formatScore(departmentAverage)}
+      </p>
+
+      <p className="mt-2 text-sm text-gray-500">
+        {departmentName}
+      </p>
+
+      <p
+        className={`mt-3 text-sm font-semibold ${getChangeClass(
+          employeeVsDepartment
+        )}`}
+      >
+        Rozdiel zamestnanca: {formatChange(employeeVsDepartment)}
+      </p>
+    </div>
+
+    <div className="rounded-2xl border bg-white p-5 shadow-sm">
+      <p className="text-sm font-semibold text-gray-600">
+        Priemer zariadenia
+      </p>
+
+      <p className="mt-2 text-3xl font-bold text-gray-900">
+        {formatScore(facilityAverage)}
+      </p>
+
+      <p className="mt-2 text-sm text-gray-500">
+        Všetci hodnotení zamestnanci
+      </p>
+
+      <p
+        className={`mt-3 text-sm font-semibold ${getChangeClass(
+          employeeVsFacility
+        )}`}
+      >
+        Rozdiel zamestnanca: {formatChange(employeeVsFacility)}
+      </p>
+    </div>
+  </div>
 </div>
       </section>
 
