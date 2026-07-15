@@ -3,6 +3,7 @@
 import { supabase } from "@/lib/supabase";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { createPortal } from "react-dom";
 
 type CategoryStyle = {
   description: string;
@@ -207,6 +208,10 @@ export default function EvaluationForm({
   const [missingQuestionIds, setMissingQuestionIds] = useState<string[]>([]);
   const [validationMessage, setValidationMessage] = useState("");
   const [errorStep, setErrorStep] = useState<number | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => {
+  setIsMounted(true);
+}, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -599,53 +604,67 @@ export default function EvaluationForm({
 
   const categoryStyle =
     CATEGORY_STYLES[currentGroup.categoryName] || DEFAULT_CATEGORY_STYLE;
+    const progressPanel = (
+  <div
+    className="fixed inset-x-0 top-0 border-b border-gray-200 bg-white shadow-md"
+    style={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      right: 0,
+      zIndex: 9999,
+    }}
+  >
+    <div className="mx-auto w-full max-w-3xl px-4 py-3 sm:px-6 sm:py-4">
+      <div className="flex items-center justify-between gap-4">
+        <p className="text-sm font-semibold text-gray-800 sm:text-base">
+          Oblasť {currentStep + 1} z {totalSteps}
+        </p>
+
+        <p className="text-sm font-bold text-gray-900 sm:text-base">
+          {answeredCount} z {totalQuestions} otázok
+        </p>
+      </div>
+
+      <div
+        className="mt-2.5 h-2.5 w-full overflow-hidden rounded-full bg-gray-200 sm:h-3"
+        role="progressbar"
+        aria-label="Priebeh hodnotenia"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={progress}
+      >
+        <div
+          className="h-full rounded-full bg-[#df4a33] transition-[width] duration-300"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+
+      <div className="mt-1.5 flex items-center justify-between gap-3">
+        <p className="truncate text-xs font-medium text-gray-600 sm:text-sm">
+          {currentGroup.categoryName}
+        </p>
+
+        <p className="shrink-0 text-xs font-bold text-gray-600 sm:text-sm">
+          {progress} %
+        </p>
+      </div>
+    </div>
+  </div>
+);
 
   return (
+  <>
+    {isMounted
+      ? createPortal(progressPanel, document.body)
+      : null}
+
     <form
       onSubmit={handleFormSubmit}
       noValidate
-      className="mt-6 min-w-0 space-y-5 pb-24 sm:mt-8 sm:space-y-7 sm:pb-0"
+      className="mt-6 min-w-0 space-y-5 pb-24 pt-24 sm:mt-8 sm:space-y-7 sm:pb-0 sm:pt-28"
     >
-      <div className="fixed inset-x-0 top-0 z-50 border-b border-gray-200 bg-white/95 shadow-md backdrop-blur">
-  <div className="mx-auto w-full max-w-3xl px-4 py-3 sm:px-6 sm:py-4">
-    <div className="flex items-center justify-between gap-4">
-      <p className="text-sm font-semibold text-gray-800 sm:text-base">
-        Oblasť {currentStep + 1} z {totalSteps}
-      </p>
-
-      <p className="text-sm font-bold text-gray-900 sm:text-base">
-        {answeredCount} z {totalQuestions} otázok
-      </p>
-    </div>
-
-    <div
-      className="mt-2.5 h-2.5 w-full overflow-hidden rounded-full bg-gray-200 sm:h-3"
-      role="progressbar"
-      aria-label="Priebeh hodnotenia"
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-valuenow={progress}
-    >
-      <div
-        className="h-full rounded-full bg-[#df4a33] transition-[width] duration-300"
-        style={{ width: `${progress}%` }}
-      />
-    </div>
-
-    <div className="mt-1.5 flex items-center justify-between gap-3">
-      <p className="truncate text-xs font-medium text-gray-600 sm:text-sm">
-        {currentGroup.categoryName}
-      </p>
-
-      <p className="shrink-0 text-xs font-bold text-gray-600 sm:text-sm">
-        {progress} %
-      </p>
-    </div>
-  </div>
-</div>
-
-<div aria-hidden="true" className="h-[105px] sm:h-[120px]" />
-
+     
       {currentStep === 0 && (
         <div className="grid gap-4 lg:grid-cols-2">
           <div className="svida-info-box rounded-2xl p-5 sm:p-6">
@@ -876,6 +895,7 @@ export default function EvaluationForm({
           )}
         </div>
       </div>
-    </form>
+        </form>
+  </>
   );
 }
