@@ -1,14 +1,12 @@
 "use client";
 
 import {
-  useCallback,
   useEffect,
   useState,
   type FormEvent,
 } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import TurnstileWidget from "@/components/TurnstileWidget";
 
 function formatDate(date: string | null) {
   if (!date) return "";
@@ -25,7 +23,9 @@ function createSessionToken() {
   crypto.getRandomValues(values);
 
   return Array.from(values)
-    .map((value) => value.toString(16).padStart(2, "0"))
+    .map((value) =>
+      value.toString(16).padStart(2, "0")
+    )
     .join("");
 }
 
@@ -34,7 +34,8 @@ export default function StartPage() {
 
   const [code, setCode] = useState("");
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] =
+    useState(false);
 
   const [checkingPeriod, setCheckingPeriod] =
     useState(true);
@@ -45,51 +46,19 @@ export default function StartPage() {
   const [periodText, setPeriodText] =
     useState("");
 
-  const [turnstileToken, setTurnstileToken] =
-    useState("");
-
-  const [turnstileResetKey, setTurnstileResetKey] =
-    useState(0);
-
-  const handleTurnstileVerify = useCallback(
-    (token: string) => {
-      setTurnstileToken(token);
-      setError("");
-    },
-    []
-  );
-
-  const handleTurnstileExpire = useCallback(() => {
-    setTurnstileToken("");
-    setError(
-      "Bezpečnostné overenie vypršalo. Overte sa znova."
-    );
-  }, []);
-
-  const handleTurnstileError = useCallback(() => {
-    setTurnstileToken("");
-    setError(
-      "Bezpečnostné overenie sa nepodarilo načítať. Obnovte stránku alebo to skúste znova."
-    );
-  }, []);
-
-  function resetTurnstile() {
-    setTurnstileToken("");
-    setTurnstileResetKey(
-      (current) => current + 1
-    );
-  }
-
   useEffect(() => {
     let isMounted = true;
 
     async function checkPeriod() {
       try {
-        const { data: period } = await supabase
-          .from("evaluation_periods")
-          .select("id, voting_from, voting_to")
-          .eq("is_active", true)
-          .single();
+        const { data: period } =
+          await supabase
+            .from("evaluation_periods")
+            .select(
+              "id, voting_from, voting_to"
+            )
+            .eq("is_active", true)
+            .single();
 
         if (!isMounted) {
           return;
@@ -118,7 +87,9 @@ export default function StartPage() {
         setPeriodText(
           `Hlasovanie je dostupné od ${formatDate(
             period.voting_from
-          )} do ${formatDate(period.voting_to)}.`
+          )} do ${formatDate(
+            period.voting_to
+          )}.`
         );
       } catch {
         if (isMounted) {
@@ -164,13 +135,6 @@ export default function StartPage() {
       return;
     }
 
-    if (!turnstileToken) {
-      setError(
-        "Najprv dokončite bezpečnostné overenie."
-      );
-      return;
-    }
-
     setLoading(true);
     setError("");
 
@@ -189,18 +153,18 @@ export default function StartPage() {
         sessionToken = createSessionToken();
       }
 
-      const sessionResponse = await fetch(
+      const response = await fetch(
         "/api/voting-session",
         {
           method: "POST",
           credentials: "same-origin",
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type":
+              "application/json",
           },
           body: JSON.stringify({
             code: normalizedCode,
             sessionToken,
-            turnstileToken,
           }),
         }
       );
@@ -215,13 +179,13 @@ export default function StartPage() {
 
       try {
         responseData =
-          await sessionResponse.json();
+          await response.json();
       } catch {
         // Odpoveď nemusela obsahovať JSON.
       }
 
       if (
-        !sessionResponse.ok ||
+        !response.ok ||
         responseData.success !== true ||
         !responseData.votingCodeId ||
         !responseData.votingCode ||
@@ -231,8 +195,6 @@ export default function StartPage() {
           responseData.message ||
             "Prihlásenie sa nepodarilo dokončiť."
         );
-
-        resetTurnstile();
         return;
       }
 
@@ -267,8 +229,6 @@ export default function StartPage() {
       setError(
         "Prihlásenie sa nepodarilo dokončiť. Skúste to znova."
       );
-
-      resetTurnstile();
     } finally {
       setLoading(false);
     }
@@ -299,7 +259,8 @@ export default function StartPage() {
           {checkingPeriod ? (
             <div className="mt-6 rounded-2xl border border-gray-200 bg-gray-50 p-5 text-center">
               <p className="text-sm font-medium text-gray-600 sm:text-base">
-                Overujem dostupnosť hodnotenia…
+                Overujem dostupnosť
+                hodnotenia…
               </p>
             </div>
           ) : !votingOpen ? (
@@ -308,7 +269,8 @@ export default function StartPage() {
               className="mt-6 rounded-2xl border border-orange-200 bg-orange-50 p-4 text-center sm:p-5"
             >
               <p className="text-base font-semibold text-orange-900">
-                Hodnotenie momentálne nie je aktívne
+                Hodnotenie momentálne nie je
+                aktívne
               </p>
 
               <p className="mt-2 text-sm leading-relaxed text-orange-800 sm:text-base">
@@ -318,7 +280,8 @@ export default function StartPage() {
           ) : (
             <>
               <p className="mt-4 text-center text-sm leading-relaxed text-gray-600 sm:text-base">
-                Zadajte svoj 4-miestny anonymný kód.
+                Zadajte svoj 4-miestny anonymný
+                kód.
               </p>
 
               <form
@@ -363,17 +326,20 @@ export default function StartPage() {
                         : "code-help"
                     }
                     className="
-                      min-h-14 w-full rounded-xl border border-gray-300
+                      min-h-14 w-full rounded-xl
+                      border border-gray-300
                       bg-white px-4 py-3 text-center
-                      text-2xl font-bold uppercase tracking-[0.35em]
-                      text-gray-900 shadow-sm outline-none
-                      transition
+                      text-2xl font-bold uppercase
+                      tracking-[0.35em] text-gray-900
+                      shadow-sm outline-none transition
                       placeholder:text-gray-300
                       focus:border-[var(--svida-primary)]
                       focus:ring-2
                       focus:ring-[var(--svida-primary)]/20
-                      disabled:cursor-not-allowed disabled:opacity-60
-                      sm:min-h-16 sm:text-3xl sm:tracking-[0.45em]
+                      disabled:cursor-not-allowed
+                      disabled:opacity-60
+                      sm:min-h-16 sm:text-3xl
+                      sm:tracking-[0.45em]
                     "
                     placeholder="AB12"
                   />
@@ -382,27 +348,9 @@ export default function StartPage() {
                     id="code-help"
                     className="mt-2 text-center text-xs text-gray-500 sm:text-sm"
                   >
-                    Kód obsahuje 4 písmená alebo číslice.
+                    Kód obsahuje 4 písmená
+                    alebo číslice.
                   </p>
-                </div>
-
-                <div>
-                  <p className="mb-2 text-sm font-semibold text-gray-800">
-                    Bezpečnostné overenie
-                  </p>
-
-                  <TurnstileWidget
-                    key={turnstileResetKey}
-                    onVerify={
-                      handleTurnstileVerify
-                    }
-                    onExpire={
-                      handleTurnstileExpire
-                    }
-                    onError={
-                      handleTurnstileError
-                    }
-                  />
                 </div>
 
                 {error && (
@@ -419,14 +367,15 @@ export default function StartPage() {
                   type="submit"
                   disabled={
                     loading ||
-                    code.length !== 4 ||
-                    !turnstileToken
+                    code.length !== 4
                   }
                   className="
-                    svida-btn inline-flex min-h-12 w-full
-                    items-center justify-center rounded-xl
-                    px-5 py-3 text-center text-base font-semibold
-                    disabled:cursor-not-allowed disabled:opacity-50
+                    svida-btn inline-flex min-h-12
+                    w-full items-center justify-center
+                    rounded-xl px-5 py-3
+                    text-center text-base font-semibold
+                    disabled:cursor-not-allowed
+                    disabled:opacity-50
                     sm:min-h-14 sm:text-lg
                   "
                 >
