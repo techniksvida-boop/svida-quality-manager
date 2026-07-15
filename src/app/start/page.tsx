@@ -1,8 +1,14 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useState,
+  type FormEvent,
+} from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import TurnstileWidget from "@/components/TurnstileWidget";
 
 function formatDate(date: string | null) {
   if (!date) return "";
@@ -23,19 +29,6 @@ function createSessionToken() {
     .join("");
 }
 
-async function hashSessionToken(token: string) {
-  const encodedToken = new TextEncoder().encode(token);
-
-  const hashBuffer = await crypto.subtle.digest(
-    "SHA-256",
-    encodedToken
-  );
-
-  return Array.from(new Uint8Array(hashBuffer))
-    .map((value) => value.toString(16).padStart(2, "0"))
-    .join("");
-}
-
 export default function StartPage() {
   const router = useRouter();
 
@@ -51,6 +44,41 @@ export default function StartPage() {
 
   const [periodText, setPeriodText] =
     useState("");
+
+  const [turnstileToken, setTurnstileToken] =
+    useState("");
+
+  const [turnstileResetKey, setTurnstileResetKey] =
+    useState(0);
+
+  const handleTurnstileVerify = useCallback(
+    (token: string) => {
+      setTurnstileToken(token);
+      setError("");
+    },
+    []
+  );
+
+  const handleTurnstileExpire = useCallback(() => {
+    setTurnstileToken("");
+    setError(
+      "Bezpečnostné overenie vypršalo. Overte sa znova."
+    );
+  }, []);
+
+  const handleTurnstileError = useCallback(() => {
+    setTurnstileToken("");
+    setError(
+      "Bezpečnostné overenie sa nepodarilo načítať. Obnovte stránku alebo to skúste znova."
+    );
+  }, []);
+
+  function resetTurnstile() {
+    setTurnstileToken("");
+    setTurnstileResetKey(
+      (current) => current + 1
+    );
+  }
 
   useEffect(() => {
     let isMounted = true;
@@ -136,37 +164,22 @@ export default function StartPage() {
       return;
     }
 
+    if (!turnstileToken) {
+      setError(
+        "Najprv dokončite bezpečnostné overenie."
+      );
+      return;
+    }
+
     setLoading(true);
     setError("");
 
     try {
-      const { data, error: queryError } =
-        await supabase
-          .from("voting_codes")
-          .select(
-            "id, code, is_active, employee_id"
-          )
-          .eq("code", normalizedCode)
-          .eq("is_active", true)
-          .single();
-
-      if (queryError || !data) {
-        setError("Zadaný kód nie je platný.");
-        return;
-      }
-
-      if (!data.employee_id) {
-        setError(
-          "Kód nemá priradeného zamestnanca."
-        );
-        return;
-      }
-
-      const storedVotingCodeId =
-        localStorage.getItem("voting_code_id");
+      const storedCode =
+        localStorage.getItem("voting_code");
 
       let sessionToken =
-        storedVotingCodeId === data.id
+        storedCode === normalizedCode
           ? localStorage.getItem(
               "voting_session_token"
             )
@@ -175,65 +188,6 @@ export default function StartPage() {
       if (!sessionToken) {
         sessionToken = createSessionToken();
       }
-
-      const sessionTokenHash =
-        await hashSessionToken(sessionToken);
-
-      const {
-        data: sessionAllowed,
-        error: sessionError,
-      } = await supabase.rpc(
-        "start_voting_session",
-        {
-          p_voting_code_id: data.id,
-          p_session_token_hash:
-            sessionTokenHash,
-        }
-      );
-
-      if (sessionError) {
-        console.error(
-          "Chyba pri vytváraní relácie:",
-          sessionError
-        );
-
-        setError(
-          "Prihlásenie sa nepodarilo overiť. Skúste to znova."
-        );
-        return;
-      }
-
-      if (sessionAllowed !== true) {
-        setError(
-          "Tento hodnotiaci kód je momentálne používaný na inom zariadení. Najprv ukončite pôvodnú reláciu alebo počkajte 30 minút od poslednej aktivity."
-        );
-        return;
-      }
-
-      /*
-       * Token uložíme pred serverovým volaním.
-       * Ak by serverové volanie zlyhalo, pri ďalšom pokuse
-       * sa použije rovnaký token a databáza prihlásenie nezablokuje.
-       */
-      localStorage.setItem(
-        "voting_code_id",
-        data.id
-      );
-
-      localStorage.setItem(
-        "voting_code",
-        data.code
-      );
-
-      localStorage.setItem(
-        "employee_id",
-        data.employee_id
-      );
-
-      localStorage.setItem(
-        "voting_session_token",
-        sessionToken
-      );
 
       const sessionResponse = await fetch(
         "/api/voting-session",
@@ -244,45 +198,77 @@ export default function StartPage() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            votingCodeId: data.id,
+            code: normalizedCode,
             sessionToken,
+            turnstileToken,
           }),
         }
       );
 
-      if (!sessionResponse.ok) {
-        let message =
-          "Serverovú prihlasovaciu reláciu sa nepodarilo vytvoriť.";
+      let responseData: {
+        success?: boolean;
+        message?: string;
+        votingCodeId?: string;
+        votingCode?: string;
+        employeeId?: string;
+      } = {};
 
-        try {
-          const responseData =
-            await sessionResponse.json();
+      try {
+        responseData =
+          await sessionResponse.json();
+      } catch {
+        // Odpoveď nemusela obsahovať JSON.
+      }
 
-          if (
-            typeof responseData?.message ===
-            "string"
-          ) {
-            message = responseData.message;
-          }
-        } catch {
-          // Odpoveď nemusela obsahovať JSON.
-        }
+      if (
+        !sessionResponse.ok ||
+        responseData.success !== true ||
+        !responseData.votingCodeId ||
+        !responseData.votingCode ||
+        !responseData.employeeId
+      ) {
+        setError(
+          responseData.message ||
+            "Prihlásenie sa nepodarilo dokončiť."
+        );
 
-        setError(message);
+        resetTurnstile();
         return;
       }
+
+      localStorage.setItem(
+        "voting_code_id",
+        responseData.votingCodeId
+      );
+
+      localStorage.setItem(
+        "voting_code",
+        responseData.votingCode
+      );
+
+      localStorage.setItem(
+        "employee_id",
+        responseData.employeeId
+      );
+
+      localStorage.setItem(
+        "voting_session_token",
+        sessionToken
+      );
 
       router.push("/hodnotenie");
       router.refresh();
     } catch (verificationError) {
       console.error(
-        "Chyba pri overovaní kódu:",
+        "Chyba pri prihlasovaní:",
         verificationError
       );
 
       setError(
         "Prihlásenie sa nepodarilo dokončiť. Skúste to znova."
       );
+
+      resetTurnstile();
     } finally {
       setLoading(false);
     }
@@ -322,8 +308,7 @@ export default function StartPage() {
               className="mt-6 rounded-2xl border border-orange-200 bg-orange-50 p-4 text-center sm:p-5"
             >
               <p className="text-base font-semibold text-orange-900">
-                Hodnotenie momentálne nie je
-                aktívne
+                Hodnotenie momentálne nie je aktívne
               </p>
 
               <p className="mt-2 text-sm leading-relaxed text-orange-800 sm:text-base">
@@ -333,8 +318,7 @@ export default function StartPage() {
           ) : (
             <>
               <p className="mt-4 text-center text-sm leading-relaxed text-gray-600 sm:text-base">
-                Zadajte svoj 4-miestny anonymný
-                kód.
+                Zadajte svoj 4-miestny anonymný kód.
               </p>
 
               <form
@@ -398,9 +382,27 @@ export default function StartPage() {
                     id="code-help"
                     className="mt-2 text-center text-xs text-gray-500 sm:text-sm"
                   >
-                    Kód obsahuje 4 písmená alebo
-                    číslice.
+                    Kód obsahuje 4 písmená alebo číslice.
                   </p>
+                </div>
+
+                <div>
+                  <p className="mb-2 text-sm font-semibold text-gray-800">
+                    Bezpečnostné overenie
+                  </p>
+
+                  <TurnstileWidget
+                    key={turnstileResetKey}
+                    onVerify={
+                      handleTurnstileVerify
+                    }
+                    onExpire={
+                      handleTurnstileExpire
+                    }
+                    onError={
+                      handleTurnstileError
+                    }
+                  />
                 </div>
 
                 {error && (
@@ -417,7 +419,8 @@ export default function StartPage() {
                   type="submit"
                   disabled={
                     loading ||
-                    code.length !== 4
+                    code.length !== 4 ||
+                    !turnstileToken
                   }
                   className="
                     svida-btn inline-flex min-h-12 w-full

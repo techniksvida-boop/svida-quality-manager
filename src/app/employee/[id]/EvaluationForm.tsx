@@ -501,98 +501,84 @@ useEffect(() => {
   }
 
   async function handleSubmit() {
-    setLoading(true);
+  setLoading(true);
+
+  try {
+    const submittedAnswers = questions.map((question) => ({
+      questionId: question.id,
+      score: Number(answers[question.id]),
+    }));
+
+    const response = await fetch("/api/submit-evaluation", {
+      method: "POST",
+      credentials: "same-origin",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        evaluatedEmployeeId: employeeId,
+        periodId,
+        evaluationTypeCode,
+        answers: submittedAnswers,
+      }),
+    });
+
+    let responseData: {
+      success?: boolean;
+      message?: string;
+      evaluationId?: string;
+    } = {};
 
     try {
-      const votingCodeId = localStorage.getItem("voting_code_id");
-
-      if (!votingCodeId) {
-        alert("Najprv zadajte anonymný hlasovací kód.");
-        return;
-      }
-
-      const { data: evaluationType } = await supabase
-        .from("evaluation_types")
-        .select("id, code")
-        .eq("code", evaluationTypeCode)
-        .single();
-
-      if (!evaluationType) {
-        alert("Typ hodnotenia sa nepodarilo načítať.");
-        return;
-      }
-
-      const { data: alreadyUsed } = await supabase
-        .from("voting_code_usage")
-        .select("id")
-        .eq("voting_code_id", votingCodeId)
-        .eq("evaluated_employee_id", employeeId)
-        .eq("period_id", periodId)
-        .eq("evaluation_type_id", evaluationType.id)
-        .maybeSingle();
-
-      if (alreadyUsed) {
-        alert("Toto hodnotenie ste už v aktuálnom období odoslali.");
-        setAlreadySubmitted(true);
-        return;
-      }
-
-      const { data: evaluation, error: evaluationError } = await supabase
-        .from("evaluations")
-        .insert({
-          period_id: periodId,
-          evaluated_employee_id: employeeId,
-          evaluation_type: evaluationTypeCode,
-          evaluation_type_id: evaluationType.id,
-          is_submitted: true,
-          submitted_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
-
-      if (evaluationError || !evaluation) {
-        alert(
-          evaluationError?.message || "Hodnotenie sa nepodarilo uložiť."
-        );
-        return;
-      }
-
-      const answerRows = questions.map((question) => ({
-        evaluation_id: evaluation.id,
-        question_id: question.id,
-        score: Number(answers[question.id]),
-      }));
-
-      const { error: answersError } = await supabase
-        .from("evaluation_answers")
-        .insert(answerRows);
-
-      if (answersError) {
-        alert(answersError.message || "Odpovede sa nepodarilo uložiť.");
-        return;
-      }
-
-      const { error: usageError } = await supabase
-        .from("voting_code_usage")
-        .insert({
-          voting_code_id: votingCodeId,
-          evaluated_employee_id: employeeId,
-          evaluation_id: evaluation.id,
-          period_id: periodId,
-          evaluation_type_id: evaluationType.id,
-        });
-
-      if (usageError) {
-        alert(usageError.message || "Použitie kódu sa nepodarilo uložiť.");
-        return;
-      }
-
-      setSent(true);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    } finally {
-      setLoading(false);
+      responseData = await response.json();
+    } catch {
+      // Odpoveď nemusela obsahovať platný JSON.
     }
+
+    if (!response.ok || responseData.success !== true) {
+      const message =
+        responseData.message ||
+        "Hodnotenie sa nepodarilo bezpečne odoslať.";
+
+      if (response.status === 401) {
+        localStorage.removeItem("voting_code_id");
+        localStorage.removeItem("voting_code");
+        localStorage.removeItem("employee_id");
+        localStorage.removeItem("voting_session_token");
+
+        alert(message);
+        window.location.href = "/start";
+        return;
+      }
+
+      if (response.status === 409) {
+        setAlreadySubmitted(true);
+        alert(message);
+        return;
+      }
+
+      alert(message);
+      return;
+    }
+
+    setSent(true);
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  } catch (error) {
+    console.error(
+      "Serverové odoslanie hodnotenia zlyhalo:",
+      error
+    );
+
+    alert(
+      "Hodnotenie sa nepodarilo odoslať. Skontrolujte internetové pripojenie a skúste to znova."
+    );
+  } finally {
+    setLoading(false);
   }
+}
 
   if (checkingSubmission) {
     return (

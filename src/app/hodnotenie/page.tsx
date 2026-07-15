@@ -1,7 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { supabase } from "@/lib/supabase";
 
 type DepartmentStyle = {
@@ -47,6 +53,20 @@ type Employee = {
   positions?: PositionRelation;
   departments?: DepartmentRelation;
 };
+
+type EvaluationType = {
+  id: string;
+  code: string;
+};
+
+type VotingCodeUsage = {
+  evaluated_employee_id: string;
+  evaluation_type_id: string;
+};
+
+const INACTIVITY_LIMIT_MS = 10 * 60 * 1000;
+const SESSION_REFRESH_INTERVAL_MS = 60 * 1000;
+const INACTIVITY_CHECK_INTERVAL_MS = 15 * 1000;
 
 const DEPARTMENT_STYLES: Record<string, DepartmentStyle> = {
   "Úsek opatrovateľskej starostlivosti": {
@@ -133,6 +153,7 @@ function getPositionName(employee: Employee) {
 
   return relation.name || "Pracovná pozícia neuvedená";
 }
+
 async function hashSessionToken(token: string) {
   const encodedToken = new TextEncoder().encode(token);
 
@@ -146,6 +167,13 @@ async function hashSessionToken(token: string) {
     .join("");
 }
 
+function clearStoredSession() {
+  localStorage.removeItem("voting_code_id");
+  localStorage.removeItem("voting_code");
+  localStorage.removeItem("employee_id");
+  localStorage.removeItem("voting_session_token");
+}
+
 export default function HodnoteniePage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [selfEmployee, setSelfEmployee] = useState<Employee | null>(null);
@@ -153,21 +181,39 @@ export default function HodnoteniePage() {
   const [peerUsed, setPeerUsed] = useState<string[]>([]);
   const [managerUsed, setManagerUsed] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loggingOut, setLoggingOut] = useState(false);
+
   const [selectedDepartment, setSelectedDepartment] = useState<string | null>(
     null
   );
-  useEffect(() => {
-  let isMounted = true;
-  let refreshInterval: ReturnType<typeof setInterval> | null = null;
 
-  function clearStoredSession() {
-    localStorage.removeItem("voting_code_id");
-    localStorage.removeItem("voting_code");
-    localStorage.removeItem("employee_id");
-    localStorage.removeItem("voting_session_token");
-  }
+  const lastActivityRef = useRef(Date.now());
+  const lastSessionRefreshRef = useRef(0);
+  const logoutInProgressRef = useRef(false);
 
-  async function refreshSession() {
+  const logout = useCallback(async () => {
+    if (logoutInProgressRef.current) {
+      return;
+    }
+
+    logoutInProgressRef.current = true;
+    setLoggingOut(true);
+
+    try {
+      await fetch("/api/voting-session", {
+        method: "DELETE",
+        credentials: "same-origin",
+        cache: "no-store",
+      });
+    } catch (error) {
+      console.error("Serverové odhlásenie zlyhalo:", error);
+    } finally {
+      clearStoredSession();
+      window.location.href = "/start";
+    }
+  }, []);
+
+  const refreshSession = useCallback(async () => {
     const votingCodeId = localStorage.getItem("voting_code_id");
     const sessionToken = localStorage.getItem("voting_session_token");
 
@@ -188,49 +234,85 @@ export default function HodnoteniePage() {
         p_session_token_hash: sessionTokenHash,
       });
 
-      if (
-        sessionError ||
-        sessionValid !== true
-      ) {
+      if (sessionError || sessionValid !== true) {
         clearStoredSession();
-
-        if (isMounted) {
-          window.location.href = "/start";
-        }
-
+        window.location.href = "/start";
         return false;
       }
 
+      lastSessionRefreshRef.current = Date.now();
       return true;
     } catch (error) {
       console.error("Reláciu sa nepodarilo obnoviť:", error);
-
       return true;
     }
-  }
+  }, []);
 
-  async function initializeSessionRefresh() {
-    const sessionValid = await refreshSession();
+  useEffect(() => {
+    let isMounted = true;
 
-    if (!sessionValid || !isMounted) {
-      return;
+    async function initializeSession() {
+      const sessionValid = await refreshSession();
+
+      if (!sessionValid || !isMounted) {
+        return;
+      }
+
+      lastActivityRef.current = Date.now();
+      lastSessionRefreshRef.current = Date.now();
     }
 
-    refreshInterval = setInterval(() => {
-      void refreshSession();
-    }, 60_000);
-  }
+    function registerActivity() {
+      if (logoutInProgressRef.current) {
+        return;
+      }
 
-  void initializeSessionRefresh();
+      const now = Date.now();
+      lastActivityRef.current = now;
 
-  return () => {
-    isMounted = false;
-
-    if (refreshInterval) {
-      clearInterval(refreshInterval);
+      if (
+        now - lastSessionRefreshRef.current >=
+        SESSION_REFRESH_INTERVAL_MS
+      ) {
+        void refreshSession();
+      }
     }
-  };
-}, []);
+
+    const activityEvents: Array<keyof WindowEventMap> = [
+      "mousedown",
+      "mousemove",
+      "keydown",
+      "scroll",
+      "touchstart",
+      "click",
+    ];
+
+    activityEvents.forEach((eventName) => {
+      window.addEventListener(eventName, registerActivity, {
+        passive: true,
+      });
+    });
+
+    const inactivityInterval = window.setInterval(() => {
+      const inactiveFor = Date.now() - lastActivityRef.current;
+
+      if (inactiveFor >= INACTIVITY_LIMIT_MS) {
+        void logout();
+      }
+    }, INACTIVITY_CHECK_INTERVAL_MS);
+
+    void initializeSession();
+
+    return () => {
+      isMounted = false;
+
+      activityEvents.forEach((eventName) => {
+        window.removeEventListener(eventName, registerActivity);
+      });
+
+      window.clearInterval(inactivityInterval);
+    };
+  }, [logout, refreshSession]);
 
   useEffect(() => {
     let isMounted = true;
@@ -240,6 +322,7 @@ export default function HodnoteniePage() {
       const employeeId = localStorage.getItem("employee_id");
 
       if (!votingCodeId || !employeeId) {
+        clearStoredSession();
         window.location.href = "/start";
         return;
       }
@@ -274,19 +357,26 @@ export default function HodnoteniePage() {
           .eq("voting_code_id", votingCodeId)
           .eq("period_id", activePeriod.id);
 
-        const { data: evaluationTypes } = await supabase
+        const { data: evaluationTypesData } = await supabase
           .from("evaluation_types")
           .select("id, code")
           .in("code", ["peer", "self", "manager"]);
 
-        const peerType = evaluationTypes?.find(
-          (type: any) => type.code === "peer"
+        const evaluationTypes =
+          (evaluationTypesData || []) as EvaluationType[];
+
+        const usages = (usageData || []) as VotingCodeUsage[];
+
+        const peerType = evaluationTypes.find(
+          (type) => type.code === "peer"
         );
-        const selfType = evaluationTypes?.find(
-          (type: any) => type.code === "self"
+
+        const selfType = evaluationTypes.find(
+          (type) => type.code === "self"
         );
-        const managerType = evaluationTypes?.find(
-          (type: any) => type.code === "manager"
+
+        const managerType = evaluationTypes.find(
+          (type) => type.code === "manager"
         );
 
         const allEmployees = (employeesData || []) as Employee[];
@@ -304,28 +394,32 @@ export default function HodnoteniePage() {
         );
 
         setPeerUsed(
-          (usageData || [])
+          usages
             .filter(
-              (usage: any) => usage.evaluation_type_id === peerType?.id
+              (usage) =>
+                usage.evaluation_type_id === peerType?.id
             )
-            .map((usage: any) => usage.evaluated_employee_id)
+            .map((usage) => usage.evaluated_employee_id)
         );
 
         setManagerUsed(
-          (usageData || [])
+          usages
             .filter(
-              (usage: any) => usage.evaluation_type_id === managerType?.id
+              (usage) =>
+                usage.evaluation_type_id === managerType?.id
             )
-            .map((usage: any) => usage.evaluated_employee_id)
+            .map((usage) => usage.evaluated_employee_id)
         );
 
         setSelfDone(
-          (usageData || []).some(
-            (usage: any) =>
+          usages.some(
+            (usage) =>
               usage.evaluation_type_id === selfType?.id &&
               usage.evaluated_employee_id === employeeId
           )
         );
+      } catch (error) {
+        console.error("Údaje hodnotenia sa nepodarilo načítať:", error);
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -333,7 +427,7 @@ export default function HodnoteniePage() {
       }
     }
 
-    loadData();
+    void loadData();
 
     return () => {
       isMounted = false;
@@ -366,7 +460,8 @@ export default function HodnoteniePage() {
     )?.name || "";
 
   const selectedDepartmentStyle =
-    DEPARTMENT_STYLES[selectedDepartmentName] || DEFAULT_DEPARTMENT_STYLE;
+    DEPARTMENT_STYLES[selectedDepartmentName] ||
+    DEFAULT_DEPARTMENT_STYLE;
 
   if (loading) {
     return (
@@ -385,6 +480,24 @@ export default function HodnoteniePage() {
   return (
     <main className="svida-page svida-page-bg">
       <div className="svida-container">
+        <div className="mb-5 flex justify-end sm:mb-6">
+          <button
+            type="button"
+            onClick={() => void logout()}
+            disabled={loggingOut}
+            className="
+              inline-flex min-h-11 items-center justify-center
+              rounded-xl border border-red-200 bg-white
+              px-4 py-2.5 text-sm font-semibold text-red-700
+              transition hover:border-red-300 hover:bg-red-50
+              disabled:cursor-not-allowed disabled:opacity-60
+              sm:text-base
+            "
+          >
+            {loggingOut ? "Odhlasujem…" : "Odhlásiť sa"}
+          </button>
+        </div>
+
         <header className="mb-8 text-center sm:mb-10">
           <div className="mb-5 flex justify-center sm:mb-6">
             <img
@@ -402,6 +515,11 @@ export default function HodnoteniePage() {
             Vyplňte sebahodnotenie a následne hodnotenie ostatných
             zamestnancov. Vedúci pracovníci môžu navyše samostatne hodnotiť
             svojich podriadených.
+          </p>
+
+          <p className="mx-auto mt-2 max-w-3xl text-xs leading-relaxed text-gray-500 sm:text-sm">
+            Z bezpečnostných dôvodov budete po 10 minútach nečinnosti
+            automaticky odhlásený.
           </p>
         </header>
 
