@@ -577,11 +577,11 @@ export default function EvaluationForm({
             </a>
 
             <a
-              href="/start"
-              className="inline-flex min-h-12 items-center justify-center rounded-xl border border-emerald-300 bg-white px-5 py-3 text-center text-base font-semibold text-emerald-800 transition hover:bg-emerald-100 sm:rounded-2xl sm:px-6 sm:py-4 sm:text-lg"
-            >
-              Späť na úvod
-            </a>
+  href="/hodnotenie"
+  className="inline-flex min-h-12 items-center justify-center rounded-xl border border-emerald-300 bg-white px-5 py-3 text-center text-base font-semibold text-emerald-800 transition hover:bg-emerald-100 sm:rounded-2xl sm:px-6 sm:py-4 sm:text-lg"
+>
+  Späť na moju pracovnú plochu
+</a>
           </div>
         </div>
       </div>
