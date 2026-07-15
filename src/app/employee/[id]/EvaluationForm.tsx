@@ -662,7 +662,7 @@ export default function EvaluationForm({
     <form
       onSubmit={handleFormSubmit}
       noValidate
-      className="mt-6 min-w-0 space-y-5 pb-24 pt-24 sm:mt-8 sm:space-y-7 sm:pb-0 sm:pt-28"
+      className="mt-6 min-w-0 space-y-5 pb-24 sm:mt-8 sm:space-y-7 sm:pb-0"
     >
      
       {currentStep === 0 && (
