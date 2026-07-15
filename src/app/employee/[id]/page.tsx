@@ -179,21 +179,25 @@ export default async function EmployeePage({ params }: Props) {
           <Link
   href="/hodnotenie"
   className="
-    mb-5 inline-flex min-h-11 items-center
-              text-sm font-medium text-gray-600
-              transition hover:text-gray-900
-              focus-visible:outline-none
-              focus-visible:ring-2
-              focus-visible:ring-[var(--svida-primary)]
-              focus-visible:ring-offset-2
-              sm:mb-6
-            "
-          >
-            <span aria-hidden="true" className="mr-2">
-              ←
-            </span>
-            Späť na moju pracovnú plochu
-          </Link>
+    mb-6 inline-flex min-h-12 items-center justify-center
+    rounded-xl border border-[#df4a33]
+    bg-[#df4a33] px-5 py-3
+    text-sm font-semibold text-white
+    shadow-sm transition
+    hover:bg-[#c73f2b]
+    focus-visible:outline-none
+    focus-visible:ring-2
+    focus-visible:ring-[#df4a33]
+    focus-visible:ring-offset-2
+    active:scale-[0.99]
+    sm:text-base
+  "
+>
+  <span aria-hidden="true" className="mr-2">
+    ←
+  </span>
+  Späť na moju pracovnú plochu
+</Link>
 
           <div className="svida-card min-w-0 rounded-2xl p-5 sm:p-7">
             <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 sm:text-sm">
