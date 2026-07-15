@@ -45,9 +45,9 @@ function MessagePage({
           </p>
 
           <Link
-            href="/"
-            className="
-              svida-btn mt-6 inline-flex min-h-12 w-full items-center
+  href="/hodnotenie"
+  className="
+    svida-btn mt-6 inline-flex min-h-12 w-full items-center
               justify-center rounded-xl px-5 py-3
               text-center text-base font-semibold
               focus-visible:outline-none
@@ -177,9 +177,9 @@ export default async function EmployeePage({ params }: Props) {
           </div>
 
           <Link
-            href="/"
-            className="
-              mb-5 inline-flex min-h-11 items-center
+  href="/hodnotenie"
+  className="
+    mb-5 inline-flex min-h-11 items-center
               text-sm font-medium text-gray-600
               transition hover:text-gray-900
               focus-visible:outline-none
@@ -192,7 +192,7 @@ export default async function EmployeePage({ params }: Props) {
             <span aria-hidden="true" className="mr-2">
               ←
             </span>
-            Späť na zoznam
+            Späť na moju pracovnú plochu
           </Link>
 
           <div className="svida-card min-w-0 rounded-2xl p-5 sm:p-7">
