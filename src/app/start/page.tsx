@@ -14,6 +14,27 @@ function formatDate(date: string | null) {
   }).format(new Date(`${date}T00:00:00`));
 }
 
+function createSessionToken() {
+  const values = new Uint8Array(32);
+  crypto.getRandomValues(values);
+
+  return Array.from(values)
+    .map((value) => value.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+async function hashSessionToken(token: string) {
+  const encodedToken = new TextEncoder().encode(token);
+  const hashBuffer = await crypto.subtle.digest(
+    "SHA-256",
+    encodedToken
+  );
+
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((value) => value.toString(16).padStart(2, "0"))
+    .join("");
+}
+
 export default function StartPage() {
   const router = useRouter();
 
@@ -21,9 +42,14 @@ export default function StartPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const [checkingPeriod, setCheckingPeriod] = useState(true);
-  const [votingOpen, setVotingOpen] = useState(false);
-  const [periodText, setPeriodText] = useState("");
+  const [checkingPeriod, setCheckingPeriod] =
+    useState(true);
+
+  const [votingOpen, setVotingOpen] =
+    useState(false);
+
+  const [periodText, setPeriodText] =
+    useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -36,15 +62,21 @@ export default function StartPage() {
           .eq("is_active", true)
           .single();
 
-        if (!isMounted) return;
-
-        if (!period) {
-          setVotingOpen(false);
-          setPeriodText("Nie je nastavené aktívne hodnotiace obdobie.");
+        if (!isMounted) {
           return;
         }
 
-        const today = new Date().toISOString().slice(0, 10);
+        if (!period) {
+          setVotingOpen(false);
+          setPeriodText(
+            "Nie je nastavené aktívne hodnotiace obdobie."
+          );
+          return;
+        }
+
+        const today = new Date()
+          .toISOString()
+          .slice(0, 10);
 
         const isOpen =
           Boolean(period.voting_from) &&
@@ -59,6 +91,13 @@ export default function StartPage() {
             period.voting_from
           )} do ${formatDate(period.voting_to)}.`
         );
+      } catch {
+        if (isMounted) {
+          setVotingOpen(false);
+          setPeriodText(
+            "Dostupnosť hodnotenia sa nepodarilo overiť."
+          );
+        }
       } finally {
         if (isMounted) {
           setCheckingPeriod(false);
@@ -73,18 +112,26 @@ export default function StartPage() {
     };
   }, []);
 
-  async function verifyCode(event: FormEvent<HTMLFormElement>) {
+  async function verifyCode(
+    event: FormEvent<HTMLFormElement>
+  ) {
     event.preventDefault();
 
-    const normalizedCode = code.trim().toUpperCase();
+    const normalizedCode = code
+      .trim()
+      .toUpperCase();
 
     if (!votingOpen) {
-      setError("Hodnotenie momentálne nie je aktívne.");
+      setError(
+        "Hodnotenie momentálne nie je aktívne."
+      );
       return;
     }
 
     if (normalizedCode.length !== 4) {
-      setError("Zadajte celý 4-miestny anonymný kód.");
+      setError(
+        "Zadajte celý 4-miestny anonymný kód."
+      );
       return;
     }
 
@@ -92,12 +139,15 @@ export default function StartPage() {
     setError("");
 
     try {
-      const { data, error: queryError } = await supabase
-        .from("voting_codes")
-        .select("id, code, is_active, employee_id")
-        .eq("code", normalizedCode)
-        .eq("is_active", true)
-        .single();
+      const { data, error: queryError } =
+        await supabase
+          .from("voting_codes")
+          .select(
+            "id, code, is_active, employee_id"
+          )
+          .eq("code", normalizedCode)
+          .eq("is_active", true)
+          .single();
 
       if (queryError || !data) {
         setError("Zadaný kód nie je platný.");
@@ -105,15 +155,90 @@ export default function StartPage() {
       }
 
       if (!data.employee_id) {
-        setError("Kód nemá priradeného zamestnanca.");
+        setError(
+          "Kód nemá priradeného zamestnanca."
+        );
         return;
       }
 
-      localStorage.setItem("voting_code_id", data.id);
-      localStorage.setItem("voting_code", data.code);
-      localStorage.setItem("employee_id", data.employee_id);
+      const storedVotingCodeId =
+        localStorage.getItem("voting_code_id");
+
+      let sessionToken =
+        storedVotingCodeId === data.id
+          ? localStorage.getItem(
+              "voting_session_token"
+            )
+          : null;
+
+      if (!sessionToken) {
+        sessionToken = createSessionToken();
+      }
+
+      const sessionTokenHash =
+        await hashSessionToken(sessionToken);
+
+      const {
+        data: sessionAllowed,
+        error: sessionError,
+      } = await supabase.rpc(
+        "start_voting_session",
+        {
+          p_voting_code_id: data.id,
+          p_session_token_hash:
+            sessionTokenHash,
+        }
+      );
+
+      if (sessionError) {
+        console.error(
+          "Chyba pri vytváraní relácie:",
+          sessionError
+        );
+
+        setError(
+          "Prihlásenie sa nepodarilo overiť. Skúste to znova."
+        );
+        return;
+      }
+
+      if (sessionAllowed !== true) {
+        setError(
+          "Tento hodnotiaci kód je momentálne používaný na inom zariadení. Najprv ukončite pôvodnú reláciu alebo počkajte 30 minút od poslednej aktivity."
+        );
+        return;
+      }
+
+      localStorage.setItem(
+        "voting_code_id",
+        data.id
+      );
+
+      localStorage.setItem(
+        "voting_code",
+        data.code
+      );
+
+      localStorage.setItem(
+        "employee_id",
+        data.employee_id
+      );
+
+      localStorage.setItem(
+        "voting_session_token",
+        sessionToken
+      );
 
       router.push("/hodnotenie");
+    } catch (verificationError) {
+      console.error(
+        "Chyba pri overovaní kódu:",
+        verificationError
+      );
+
+      setError(
+        "Prihlásenie sa nepodarilo dokončiť. Skúste to znova."
+      );
     } finally {
       setLoading(false);
     }
@@ -153,7 +278,8 @@ export default function StartPage() {
               className="mt-6 rounded-2xl border border-orange-200 bg-orange-50 p-4 text-center sm:p-5"
             >
               <p className="text-base font-semibold text-orange-900">
-                Hodnotenie momentálne nie je aktívne
+                Hodnotenie momentálne nie je
+                aktívne
               </p>
 
               <p className="mt-2 text-sm leading-relaxed text-orange-800 sm:text-base">
@@ -163,7 +289,8 @@ export default function StartPage() {
           ) : (
             <>
               <p className="mt-4 text-center text-sm leading-relaxed text-gray-600 sm:text-base">
-                Zadajte svoj 4-miestny anonymný kód.
+                Zadajte svoj 4-miestny anonymný
+                kód.
               </p>
 
               <form
@@ -183,10 +310,14 @@ export default function StartPage() {
                     id="voting-code"
                     value={code}
                     onChange={(event) => {
-                      const value = event.target.value
-                        .replace(/[^a-zA-Z0-9]/g, "")
-                        .toUpperCase()
-                        .slice(0, 4);
+                      const value =
+                        event.target.value
+                          .replace(
+                            /[^a-zA-Z0-9]/g,
+                            ""
+                          )
+                          .toUpperCase()
+                          .slice(0, 4);
 
                       setCode(value);
                       setError("");
@@ -198,7 +329,11 @@ export default function StartPage() {
                     spellCheck={false}
                     disabled={loading}
                     aria-invalid={Boolean(error)}
-                    aria-describedby={error ? "code-error" : "code-help"}
+                    aria-describedby={
+                      error
+                        ? "code-error"
+                        : "code-help"
+                    }
                     className="
                       min-h-14 w-full rounded-xl border border-gray-300
                       bg-white px-4 py-3 text-center
@@ -219,7 +354,8 @@ export default function StartPage() {
                     id="code-help"
                     className="mt-2 text-center text-xs text-gray-500 sm:text-sm"
                   >
-                    Kód obsahuje 4 písmená alebo číslice.
+                    Kód obsahuje 4 písmená alebo
+                    číslice.
                   </p>
                 </div>
 
@@ -235,7 +371,10 @@ export default function StartPage() {
 
                 <button
                   type="submit"
-                  disabled={loading || code.length !== 4}
+                  disabled={
+                    loading ||
+                    code.length !== 4
+                  }
                   className="
                     svida-btn inline-flex min-h-12 w-full
                     items-center justify-center rounded-xl
@@ -244,15 +383,19 @@ export default function StartPage() {
                     sm:min-h-14 sm:text-lg
                   "
                 >
-                  {loading ? "Overujem…" : "Pokračovať"}
+                  {loading
+                    ? "Overujem…"
+                    : "Pokračovať"}
                 </button>
               </form>
 
               <div className="svida-anonymity-box mt-6 rounded-2xl p-4">
                 <p className="text-sm leading-relaxed text-[var(--svida-anonymity-text,#5f513a)]">
-                  Kód slúži iba na overenie prístupu a zabránenie opakovanému
-                  hodnoteniu. Meno hodnotiacej osoby sa pri hodnotení
-                  nezobrazuje.
+                  Kód slúži iba na overenie
+                  prístupu a zabránenie
+                  opakovanému hodnoteniu. Meno
+                  hodnotiacej osoby sa pri
+                  hodnotení nezobrazuje.
                 </p>
               </div>
             </>

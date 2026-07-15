@@ -133,6 +133,18 @@ function getPositionName(employee: Employee) {
 
   return relation.name || "Pracovná pozícia neuvedená";
 }
+async function hashSessionToken(token: string) {
+  const encodedToken = new TextEncoder().encode(token);
+
+  const hashBuffer = await crypto.subtle.digest(
+    "SHA-256",
+    encodedToken
+  );
+
+  return Array.from(new Uint8Array(hashBuffer))
+    .map((value) => value.toString(16).padStart(2, "0"))
+    .join("");
+}
 
 export default function HodnoteniePage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -144,6 +156,81 @@ export default function HodnoteniePage() {
   const [selectedDepartment, setSelectedDepartment] = useState<string | null>(
     null
   );
+  useEffect(() => {
+  let isMounted = true;
+  let refreshInterval: ReturnType<typeof setInterval> | null = null;
+
+  function clearStoredSession() {
+    localStorage.removeItem("voting_code_id");
+    localStorage.removeItem("voting_code");
+    localStorage.removeItem("employee_id");
+    localStorage.removeItem("voting_session_token");
+  }
+
+  async function refreshSession() {
+    const votingCodeId = localStorage.getItem("voting_code_id");
+    const sessionToken = localStorage.getItem("voting_session_token");
+
+    if (!votingCodeId || !sessionToken) {
+      clearStoredSession();
+      window.location.href = "/start";
+      return false;
+    }
+
+    try {
+      const sessionTokenHash = await hashSessionToken(sessionToken);
+
+      const {
+        data: sessionValid,
+        error: sessionError,
+      } = await supabase.rpc("refresh_voting_session", {
+        p_voting_code_id: votingCodeId,
+        p_session_token_hash: sessionTokenHash,
+      });
+
+      if (
+        sessionError ||
+        sessionValid !== true
+      ) {
+        clearStoredSession();
+
+        if (isMounted) {
+          window.location.href = "/start";
+        }
+
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Reláciu sa nepodarilo obnoviť:", error);
+
+      return true;
+    }
+  }
+
+  async function initializeSessionRefresh() {
+    const sessionValid = await refreshSession();
+
+    if (!sessionValid || !isMounted) {
+      return;
+    }
+
+    refreshInterval = setInterval(() => {
+      void refreshSession();
+    }, 60_000);
+  }
+
+  void initializeSessionRefresh();
+
+  return () => {
+    isMounted = false;
+
+    if (refreshInterval) {
+      clearInterval(refreshInterval);
+    }
+  };
+}, []);
 
   useEffect(() => {
     let isMounted = true;
