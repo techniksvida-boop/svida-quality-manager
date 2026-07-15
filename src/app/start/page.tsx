@@ -25,6 +25,7 @@ function createSessionToken() {
 
 async function hashSessionToken(token: string) {
   const encodedToken = new TextEncoder().encode(token);
+
   const hashBuffer = await crypto.subtle.digest(
     "SHA-256",
     encodedToken
@@ -105,7 +106,7 @@ export default function StartPage() {
       }
     }
 
-    checkPeriod();
+    void checkPeriod();
 
     return () => {
       isMounted = false;
@@ -209,6 +210,11 @@ export default function StartPage() {
         return;
       }
 
+      /*
+       * Token uložíme pred serverovým volaním.
+       * Ak by serverové volanie zlyhalo, pri ďalšom pokuse
+       * sa použije rovnaký token a databáza prihlásenie nezablokuje.
+       */
       localStorage.setItem(
         "voting_code_id",
         data.id
@@ -229,7 +235,45 @@ export default function StartPage() {
         sessionToken
       );
 
+      const sessionResponse = await fetch(
+        "/api/voting-session",
+        {
+          method: "POST",
+          credentials: "same-origin",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            votingCodeId: data.id,
+            sessionToken,
+          }),
+        }
+      );
+
+      if (!sessionResponse.ok) {
+        let message =
+          "Serverovú prihlasovaciu reláciu sa nepodarilo vytvoriť.";
+
+        try {
+          const responseData =
+            await sessionResponse.json();
+
+          if (
+            typeof responseData?.message ===
+            "string"
+          ) {
+            message = responseData.message;
+          }
+        } catch {
+          // Odpoveď nemusela obsahovať JSON.
+        }
+
+        setError(message);
+        return;
+      }
+
       router.push("/hodnotenie");
+      router.refresh();
     } catch (verificationError) {
       console.error(
         "Chyba pri overovaní kódu:",
