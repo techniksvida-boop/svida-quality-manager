@@ -456,11 +456,24 @@ useEffect(() => {
       });
   }, 200);
 }
-function handleLogout() {
+async function handleLogout() {
+  try {
+    await fetch("/api/voting-session", {
+      method: "DELETE",
+      credentials: "same-origin",
+    });
+  } catch (error) {
+    console.error(
+      "Serverové odhlásenie zlyhalo:",
+      error
+    );
+  }
+
   localStorage.removeItem("voting_code_id");
   localStorage.removeItem("voting_code");
   localStorage.removeItem("employee_id");
   localStorage.removeItem("voting_session_token");
+  localStorage.removeItem("remember_voting_device");
 
   window.location.href = "/start";
 }

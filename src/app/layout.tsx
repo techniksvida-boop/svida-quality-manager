@@ -13,15 +13,26 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Svida Quality Manager",
+  title: "Hodnotenie Svida",
   description: "Hodnotenie zamestnancov Senior domu Svida",
+  manifest: "/manifest.webmanifest",
+  applicationName: "Hodnotenie Svida",
+  appleWebApp: {
+    capable: true,
+    title: "Hodnotenie Svida",
+    statusBarStyle: "default",
+  },
+  icons: {
+    icon: "/icon.png",
+    apple: "/icon.png",
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#df4a33",
+  themeColor: "#06b8ac",
 };
 
 export default function RootLayout({

@@ -7,6 +7,7 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+import InstallAppButton from "@/components/InstallAppButton";
 
 function formatDate(date: string | null) {
   if (!date) return "";
@@ -36,6 +37,8 @@ export default function StartPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] =
     useState(false);
+    const [rememberDevice, setRememberDevice] =
+  useState(false);
 
   const [checkingPeriod, setCheckingPeriod] =
     useState(true);
@@ -45,7 +48,81 @@ export default function StartPage() {
 
   const [periodText, setPeriodText] =
     useState("");
+useEffect(() => {
+  async function restoreRememberedSession() {
+    const rememberDevice =
+      localStorage.getItem(
+        "remember_voting_device"
+      ) === "true";
 
+    const storedCode =
+      localStorage.getItem("voting_code");
+
+    const storedSessionToken =
+      localStorage.getItem(
+        "voting_session_token"
+      );
+
+    if (
+      !rememberDevice ||
+      !storedCode ||
+      !storedSessionToken
+    ) {
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        "/api/voting-session",
+        {
+          method: "POST",
+          credentials: "same-origin",
+          headers: {
+            "Content-Type":
+              "application/json",
+          },
+          body: JSON.stringify({
+            code: storedCode,
+            sessionToken:
+              storedSessionToken,
+          }),
+        }
+      );
+
+      const responseData =
+        await response.json();
+
+      if (
+        response.ok &&
+        responseData.success === true
+      ) {
+        localStorage.setItem(
+          "voting_code_id",
+          responseData.votingCodeId
+        );
+
+        localStorage.setItem(
+          "employee_id",
+          responseData.employeeId
+        );
+
+        router.replace("/hodnotenie");
+        router.refresh();
+        return;
+      }
+
+      localStorage.removeItem(
+        "remember_voting_device"
+      );
+    } catch {
+      localStorage.removeItem(
+        "remember_voting_device"
+      );
+    }
+  }
+
+  void restoreRememberedSession();
+}, [router]);
   useEffect(() => {
     let isMounted = true;
 
@@ -217,7 +294,16 @@ export default function StartPage() {
         "voting_session_token",
         sessionToken
       );
-
+if (rememberDevice) {
+  localStorage.setItem(
+    "remember_voting_device",
+    "true"
+  );
+} else {
+  localStorage.removeItem(
+    "remember_voting_device"
+  );
+}
       router.push("/hodnotenie");
       router.refresh();
     } catch (verificationError) {
@@ -371,7 +457,21 @@ export default function StartPage() {
                     {error}
                   </div>
                 )}
+<label className="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+  <input
+    type="checkbox"
+    checked={rememberDevice}
+    onChange={(event) =>
+      setRememberDevice(event.target.checked)
+    }
+    disabled={loading}
+    className="mt-1 h-5 w-5 shrink-0 accent-[#06b8ac]"
+  />
 
+  <span className="text-sm leading-relaxed text-gray-700 sm:text-base">
+    Zapamätať toto zariadenie
+  </span>
+</label>
                 <button
                   type="submit"
                   disabled={
@@ -403,6 +503,8 @@ export default function StartPage() {
                   hodnotení nezobrazuje.
                 </p>
               </div>
+
+              <InstallAppButton />
             </>
           )}
         </section>
