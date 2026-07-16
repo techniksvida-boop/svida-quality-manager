@@ -499,13 +499,19 @@ export default function HodnoteniePage() {
         </div>
 
         <header className="mb-8 text-center sm:mb-10">
-          <div className="mb-5 flex justify-center sm:mb-6">
-            <img
-              src="/logo-svida.jpg"
-              alt="Senior dom Svida"
-              className="h-auto w-full max-w-[180px] object-contain sm:max-w-[220px]"
-            />
-          </div>
+          <div className="mb-5 flex flex-col items-center gap-5 sm:mb-6">
+  <img
+    src="/QualityCare.png"
+    alt="QualityCare 360"
+    className="h-auto w-full max-w-[360px] object-contain sm:max-w-[460px]"
+  />
+
+  <img
+    src="/logo-svida.png"
+    alt="Senior dom Svida"
+    className="h-auto w-full max-w-[150px] object-contain sm:max-w-[180px]"
+  />
+</div>
 
           <h1 className="text-2xl font-bold tracking-tight text-gray-900 sm:text-3xl lg:text-4xl">
             Ročné hodnotenie zamestnancov

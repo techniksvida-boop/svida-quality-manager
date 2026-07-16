@@ -66,7 +66,7 @@ export default async function Home() {
         <header className="mb-8 text-center sm:mb-10">
           <div className="mb-5 flex justify-center sm:mb-6">
             <img
-              src="/logo-svida.jpg"
+              src="/logo-svida.png"
               alt="Senior dom Svida"
               className="h-auto w-full max-w-[180px] object-contain sm:max-w-[220px]"
             />

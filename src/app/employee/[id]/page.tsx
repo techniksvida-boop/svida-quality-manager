@@ -29,7 +29,7 @@ function MessagePage({
       <div className="svida-form-container">
         <div className="mb-5 flex justify-center sm:mb-6">
           <img
-            src="/logo-svida.jpg"
+            src="/logo-svida.png"
             alt="Senior dom Svida"
             className="h-auto w-full max-w-[170px] object-contain sm:max-w-[210px]"
           />
@@ -170,7 +170,7 @@ export default async function EmployeePage({ params }: Props) {
         <header className="mb-6 sm:mb-8">
           <div className="mb-5 flex justify-center sm:mb-6">
             <img
-              src="/logo-svida.jpg"
+              src="/logo-svida.png"
               alt="Senior dom Svida"
               className="h-auto w-full max-w-[170px] object-contain sm:max-w-[210px]"
             />

@@ -240,7 +240,7 @@ export default function StartPage() {
         <section className="svida-card rounded-2xl p-5 sm:rounded-3xl sm:p-8">
           <div className="mb-5 flex justify-center sm:mb-6">
             <img
-              src="/logo-svida.jpg"
+              src="/logo-svida.png"
               alt="Senior dom Svida"
               className="h-auto w-full max-w-[170px] object-contain sm:max-w-[210px]"
             />

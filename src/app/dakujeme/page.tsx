@@ -4,7 +4,7 @@ export default function DakujemePage() {
       <div className="w-full max-w-xl rounded-2xl p-8 text-center svida-card">
         <div className="mb-6 flex justify-center">
           <img
-            src="/logo-svida.jpg"
+            src="/logo-svida.png"
             alt="Senior dom Svida"
             className="h-24 w-auto"
           />
