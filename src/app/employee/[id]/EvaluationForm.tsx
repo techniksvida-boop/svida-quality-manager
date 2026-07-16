@@ -221,9 +221,11 @@ export default function EvaluationForm({
   const [validationMessage, setValidationMessage] = useState("");
   const [errorStep, setErrorStep] = useState<number | null>(null);
   const [isMounted, setIsMounted] = useState(false);
-  useEffect(() => {
+
+useEffect(() => {
   setIsMounted(true);
 }, []);
+
 useEffect(() => {
   let active = true;
   let refreshInterval: ReturnType<typeof setInterval> | null = null;
@@ -269,7 +271,6 @@ useEffect(() => {
       return true;
     } catch (error) {
       console.error("Reláciu sa nepodarilo obnoviť:", error);
-
       return true;
     }
   }
@@ -412,15 +413,24 @@ useEffect(() => {
     return false;
   }
 
-  function goNext() {
-    if (!validateCurrentStep()) {
-      return;
-    }
+ function goNext() {
+  if (!validateCurrentStep()) {
+    return;
+  }
 
-    const nextStep = Math.min(currentStep + 1, totalSteps - 1);
-    const firstQuestionId =
-      groupedQuestions[nextStep]?.questions[0]?.id;
+  const nextStep = Math.min(
+    currentStep + 1,
+    totalSteps - 1
+  );
 
+  const firstQuestionId =
+    groupedQuestions[nextStep]?.questions[0]?.id;
+
+  setMissingQuestionIds([]);
+  setValidationMessage("");
+  setErrorStep(null);
+
+  window.requestAnimationFrame(() => {
     setCurrentStep(nextStep);
 
     window.setTimeout(() => {
@@ -434,8 +444,9 @@ useEffect(() => {
           behavior: "smooth",
           block: "start",
         });
-    }, 200);
-  }
+    }, 100);
+  });
+}
 
   function goBack() {
     clearValidation();

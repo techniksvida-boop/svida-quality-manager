@@ -160,6 +160,86 @@ export async function POST(
   }
 }
 
+export async function PATCH(
+  request: NextRequest
+) {
+  try {
+    const votingCodeId =
+      request.cookies.get("voting_code_id")?.value || "";
+
+    const sessionToken =
+      request.cookies.get("voting_session_token")?.value || "";
+
+    if (!votingCodeId || !sessionToken) {
+      return jsonError(
+        "Hlasovacia relácia nie je platná.",
+        401
+      );
+    }
+
+    const sessionTokenHash =
+      hashSessionToken(sessionToken);
+
+    const {
+      data: sessionValid,
+      error: sessionError,
+    } = await supabaseAdmin.rpc(
+      "refresh_voting_session",
+      {
+        p_voting_code_id: votingCodeId,
+        p_session_token_hash: sessionTokenHash,
+      }
+    );
+
+    if (
+      sessionError ||
+      sessionValid !== true
+    ) {
+      return jsonError(
+        "Hlasovacia relácia nie je platná.",
+        401
+      );
+    }
+
+    const response = NextResponse.json({
+      success: true,
+    });
+
+    const cookieOptions = {
+      httpOnly: true,
+      secure:
+        process.env.NODE_ENV === "production",
+      sameSite: "lax" as const,
+      path: "/",
+      maxAge: 10 * 60,
+    };
+
+    response.cookies.set(
+      "voting_code_id",
+      votingCodeId,
+      cookieOptions
+    );
+
+    response.cookies.set(
+      "voting_session_token",
+      sessionToken,
+      cookieOptions
+    );
+
+    return response;
+  } catch (error) {
+    console.error(
+      "Obnovenie hlasovacej relácie zlyhalo:",
+      error
+    );
+
+    return jsonError(
+      "Hlasovaciu reláciu sa nepodarilo obnoviť.",
+      500
+    );
+  }
+}
+
 export async function DELETE(
   request: NextRequest
 ) {
