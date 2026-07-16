@@ -181,6 +181,7 @@ export default function HodnoteniePage() {
   const [peerUsed, setPeerUsed] = useState<string[]>([]);
   const [managerUsed, setManagerUsed] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasActivePeriod, setHasActivePeriod] = useState<boolean | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
 
   const [selectedDepartment, setSelectedDepartment] = useState<string | null>(
@@ -328,15 +329,28 @@ export default function HodnoteniePage() {
       }
 
       try {
-        const { data: activePeriod } = await supabase
-          .from("evaluation_periods")
-          .select("id")
-          .eq("is_active", true)
-          .single();
+        const today = new Date().toISOString().split("T")[0];
 
-        if (!activePeriod) {
-          return;
-        }
+const { data: activePeriod } = await supabase
+  .from("evaluation_periods")
+  .select("id, date_from, date_to")
+  .eq("is_active", true)
+  .lte("date_from", today)
+  .gte("date_to", today)
+  .maybeSingle();
+
+if (!activePeriod) {
+  if (isMounted) {
+    setHasActivePeriod(false);
+    setLoading(false);
+  }
+
+  return;
+}
+
+if (isMounted) {
+  setHasActivePeriod(true);
+}
 
         const { data: employeesData } = await supabase
           .from("employees")
@@ -463,19 +477,45 @@ export default function HodnoteniePage() {
     DEPARTMENT_STYLES[selectedDepartmentName] ||
     DEFAULT_DEPARTMENT_STYLE;
 
-  if (loading) {
-    return (
-      <main className="svida-page svida-page-bg">
-        <div className="svida-container">
-          <div className="svida-card rounded-2xl p-6 text-center sm:p-8">
-            <p className="text-sm font-medium text-gray-600 sm:text-base">
-              Načítavam hodnotenie…
-            </p>
-          </div>
-        </div>
-      </main>
-    );
-  }
+    if (loading || hasActivePeriod === null) {
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+      <div className="text-center">
+        <p className="text-lg font-semibold text-slate-700">
+          Načítavam hodnotenie...
+        </p>
+      </div>
+    </main>
+  );
+}
+
+if (!hasActivePeriod) {
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+      <div className="w-full max-w-lg rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+        <div className="mb-5 text-5xl">ℹ️</div>
+
+        <h1 className="text-2xl font-bold text-slate-900">
+          Neprebieha žiadne aktívne hodnotenie
+        </h1>
+
+        <p className="mt-3 text-sm leading-6 text-slate-600">
+          Hodnotenie momentálne nie je dostupné. Nové hodnotenie bude možné
+          spustiť po otvorení ďalšieho hodnotiaceho obdobia.
+        </p>
+
+        <button
+          type="button"
+          onClick={logout}
+          disabled={loggingOut}
+          className="mt-6 inline-flex min-h-12 items-center justify-center rounded-xl bg-slate-900 px-6 py-3 font-semibold text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {loggingOut ? "Odhlasujem..." : "Odhlásiť sa"}
+        </button>
+      </div>
+    </main>
+  );
+}
 
   return (
     <main className="svida-page svida-page-bg">
