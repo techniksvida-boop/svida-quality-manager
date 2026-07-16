@@ -732,6 +732,27 @@ export default function HodnoteniePage() {
             )}
           </section>
         )}
+                <div className="mt-12 flex justify-start pb-8">
+          <button
+            type="button"
+            onClick={() => void logout()}
+            disabled={loggingOut}
+            className="
+              inline-flex min-h-12 items-center justify-center
+              rounded-xl border border-red-200 bg-white
+              px-5 py-3 text-base font-semibold text-red-700
+              shadow-sm transition
+              hover:border-red-300 hover:bg-red-50
+              focus-visible:outline-none
+              focus-visible:ring-2
+              focus-visible:ring-red-500
+              focus-visible:ring-offset-2
+              disabled:cursor-not-allowed disabled:opacity-60
+            "
+          >
+            {loggingOut ? "Odhlasujem…" : "Odhlásiť sa"}
+          </button>
+        </div>
       </div>
     </main>
   );
