@@ -456,6 +456,14 @@ useEffect(() => {
       });
   }, 200);
 }
+function handleLogout() {
+  localStorage.removeItem("voting_code_id");
+  localStorage.removeItem("voting_code");
+  localStorage.removeItem("employee_id");
+  localStorage.removeItem("voting_session_token");
+
+  window.location.href = "/start";
+}
 
   async function handleFormSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -650,6 +658,13 @@ useEffect(() => {
   Späť na moju pracovnú plochu
 </a>
           </div>
+          <button
+  type="button"
+  onClick={handleLogout}
+  className="mt-4 inline-flex min-h-12 w-full items-center justify-center rounded-xl border border-red-300 bg-white px-5 py-3 text-center text-base font-semibold text-red-700 transition hover:bg-red-50 sm:rounded-2xl sm:px-6 sm:py-4 sm:text-lg"
+>
+  Ukončiť hodnotenie a odhlásiť sa
+</button>
         </div>
       </div>
     );
