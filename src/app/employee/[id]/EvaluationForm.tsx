@@ -413,7 +413,9 @@ useEffect(() => {
     return false;
   }
 
- function goNext() {
+ function goNext(event: React.MouseEvent<HTMLButtonElement>) {
+    event.preventDefault();
+  event.stopPropagation();
   if (!validateCurrentStep()) {
     return;
   }
