@@ -2,7 +2,13 @@
 
 import { supabase } from "@/lib/supabase";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
 import { createPortal } from "react-dom";
 
 type CategoryStyle = {
@@ -178,6 +184,8 @@ const CATEGORY_STYLES: Record<string, CategoryStyle> = {
   },
 };
 
+const INACTIVITY_WARNING_MS = 9 * 60 * 1000;
+const INACTIVITY_LOGOUT_MS = 10 * 60 * 1000;
 const DEFAULT_CATEGORY_STYLE: CategoryStyle = {
   description: "Hodnotenie danej oblasti.",
   headerClass: "bg-gray-100 border border-gray-200",
@@ -221,9 +229,68 @@ export default function EvaluationForm({
   const [validationMessage, setValidationMessage] = useState("");
   const [errorStep, setErrorStep] = useState<number | null>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [showInactivityWarning, setShowInactivityWarning] =
+  useState(false);
+  const inactivityWarningTimerRef =
+  useRef<ReturnType<typeof setTimeout> | null>(null);
+
+const inactivityLogoutTimerRef =
+  useRef<ReturnType<typeof setTimeout> | null>(null);
 
 useEffect(() => {
   setIsMounted(true);
+}, []);
+useEffect(() => {
+  function clearInactivityTimers() {
+    if (inactivityWarningTimerRef.current) {
+      clearTimeout(inactivityWarningTimerRef.current);
+    }
+
+    if (inactivityLogoutTimerRef.current) {
+      clearTimeout(inactivityLogoutTimerRef.current);
+    }
+  }
+
+  function startInactivityTimers() {
+    clearInactivityTimers();
+    setShowInactivityWarning(false);
+
+    inactivityWarningTimerRef.current =
+      setTimeout(() => {
+        setShowInactivityWarning(true);
+      }, INACTIVITY_WARNING_MS);
+
+    inactivityLogoutTimerRef.current =
+      setTimeout(() => {
+        void handleLogout();
+      }, INACTIVITY_LOGOUT_MS);
+  }
+
+  const activityEvents = [
+    "pointerdown",
+    "keydown",
+    "touchstart",
+  ] as const;
+
+  activityEvents.forEach((eventName) => {
+    window.addEventListener(
+      eventName,
+      startInactivityTimers
+    );
+  });
+
+  startInactivityTimers();
+
+  return () => {
+    activityEvents.forEach((eventName) => {
+      window.removeEventListener(
+        eventName,
+        startInactivityTimers
+      );
+    });
+
+    clearInactivityTimers();
+  };
 }, []);
 
 useEffect(() => {
@@ -753,6 +820,45 @@ async function handleLogout() {
     {isMounted
       ? createPortal(progressPanel, document.body)
       : null}
+
+      {isMounted && showInactivityWarning
+  ? createPortal(
+      <div
+        className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 p-4"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="inactivity-warning-title"
+      >
+        <div className="w-full max-w-md rounded-2xl bg-white p-6 text-center shadow-2xl sm:rounded-3xl sm:p-8">
+          <h2
+            id="inactivity-warning-title"
+            className="text-xl font-bold text-gray-900 sm:text-2xl"
+          >
+            Ste stále pri hodnotení?
+          </h2>
+
+          <p className="mt-3 text-sm leading-relaxed text-gray-600 sm:text-base">
+            Pre nečinnosť budete približne o jednu minútu automaticky odhlásený.
+          </p>
+
+          <p className="mt-2 text-sm font-medium text-red-700 sm:text-base">
+            Neodoslané odpovede sa po odhlásení neuložia.
+          </p>
+
+          <button
+            type="button"
+            onClick={() =>
+              setShowInactivityWarning(false)
+            }
+            className="svida-btn mt-6 inline-flex min-h-12 w-full items-center justify-center rounded-xl px-5 py-3 text-base font-semibold sm:min-h-14 sm:text-lg"
+          >
+            Pokračovať v hodnotení
+          </button>
+        </div>
+      </div>,
+      document.body
+    )
+  : null}
 
     <form
       onSubmit={handleFormSubmit}
