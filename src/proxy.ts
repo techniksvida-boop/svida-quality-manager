@@ -232,7 +232,7 @@ async function protectVoting(
   }
 }
 
-export async function middleware(
+export async function proxy(
   request: NextRequest
 ) {
   const pathname =
