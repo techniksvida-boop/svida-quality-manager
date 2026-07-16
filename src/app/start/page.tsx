@@ -235,7 +235,16 @@ export default function StartPage() {
   }
 
   return (
-    <main className="svida-page svida-page-bg flex min-h-dvh items-center justify-center">
+    <main className="svida-page svida-page-bg relative flex min-h-dvh items-center justify-center">
+      <img
+  src="/icon.png"
+  alt="QualityCare 360"
+  className="
+    absolute left-4 top-4
+    h-10 w-10 object-contain
+    sm:left-6 sm:top-6 sm:h-12 sm:w-12
+  "
+/>
       <div className="w-full max-w-md">
         <section className="svida-card rounded-2xl p-5 sm:rounded-3xl sm:p-8">
           <div className="mb-5 flex justify-center sm:mb-6">
