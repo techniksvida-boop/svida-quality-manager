@@ -423,53 +423,37 @@ useEffect(() => {
     totalSteps - 1
   );
 
-  const firstQuestionId =
-    groupedQuestions[nextStep]?.questions[0]?.id;
-
   setMissingQuestionIds([]);
   setValidationMessage("");
   setErrorStep(null);
+  setCurrentStep(nextStep);
 
-  window.requestAnimationFrame(() => {
-    setCurrentStep(nextStep);
-
-    window.setTimeout(() => {
-      if (!firstQuestionId) {
-        return;
-      }
-
-      document
-        .getElementById(`question-${firstQuestionId}`)
-        ?.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
-    }, 100);
-  });
+  window.setTimeout(() => {
+    document
+      .getElementById(`category-${nextStep}`)
+      ?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+  }, 200);
 }
 
   function goBack() {
-    clearValidation();
+  clearValidation();
 
-    const previousStep = Math.max(currentStep - 1, 0);
-    const firstQuestionId =
-      groupedQuestions[previousStep]?.questions[0]?.id;
+  const previousStep = Math.max(currentStep - 1, 0);
 
-    setCurrentStep(previousStep);
+  setCurrentStep(previousStep);
 
-    window.setTimeout(() => {
-      if (!firstQuestionId) {
-        return;
-      }
-
-      document
-        .getElementById(`question-${firstQuestionId}`)
-        ?.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
-    }, 200);
-  }
+  window.setTimeout(() => {
+    document
+      .getElementById(`category-${previousStep}`)
+      ?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+  }, 200);
+}
 
   async function handleFormSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -817,7 +801,10 @@ useEffect(() => {
       )}
 
       <section className="min-w-0 space-y-4 sm:space-y-5">
-        <div className={`rounded-2xl p-4 sm:p-5 ${categoryStyle.headerClass}`}>
+        <div
+  id={`category-${currentStep}`}
+  className={`scroll-mt-36 rounded-2xl p-4 sm:scroll-mt-40 sm:p-5 ${categoryStyle.headerClass}`}
+>
           <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 sm:text-sm">
             Oblasť {currentStep + 1} z {totalSteps}
           </p>
