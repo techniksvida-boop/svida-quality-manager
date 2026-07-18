@@ -68,6 +68,7 @@ const INACTIVITY_LIMIT_MS = 10 * 60 * 1000;
 const SESSION_REFRESH_INTERVAL_MS = 60 * 1000;
 const INACTIVITY_CHECK_INTERVAL_MS = 15 * 1000;
 
+
 const DEPARTMENT_STYLES: Record<string, DepartmentStyle> = {
   "Úsek opatrovateľskej starostlivosti": {
     cardClass: "bg-emerald-50 border border-emerald-200",
