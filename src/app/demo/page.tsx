@@ -692,15 +692,23 @@ export default function DemoPage() {
             </div>
           </div>
 
-          <div className="mt-8 text-center">
-            <button
-              type="button"
-              onClick={resetDemo}
-              className="rounded-xl bg-teal-500 px-8 py-4 text-lg font-semibold text-white transition hover:bg-teal-600"
-            >
-              Spustiť demo znova
-            </button>
-          </div>
+         <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:justify-center">
+  <button
+    type="button"
+    onClick={() => setShowManagerReport(false)}
+    className="rounded-xl border-2 border-slate-300 bg-white px-8 py-4 text-lg font-semibold text-slate-700 transition hover:border-teal-500 hover:bg-teal-50 hover:text-teal-600"
+  >
+    Späť na výsledok
+  </button>
+
+  <button
+    type="button"
+    onClick={resetDemo}
+    className="rounded-xl bg-teal-500 px-8 py-4 text-lg font-semibold text-white transition hover:bg-teal-600"
+  >
+    Spustiť demo znova
+  </button>
+</div>
         </section>
       </main>
     );
