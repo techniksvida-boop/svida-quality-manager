@@ -397,40 +397,58 @@ export default function DemoPage() {
               </div>
 
               <div className="mt-6 grid gap-4 sm:grid-cols-3">
-                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                  <p className="text-sm font-medium text-slate-500">
-                    Celkové skóre
-                  </p>
+  <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <p className="text-sm font-medium text-slate-500">
+      Celkové skóre
+    </p>
 
-                  <p className="mt-2 text-3xl font-bold text-slate-900">
-                    {averageScore.toFixed(1)}
-                  </p>
+    <p className="mt-2 text-3xl font-bold text-slate-900">
+      {averageScore.toFixed(1)}
+    </p>
 
-                  <p className="mt-1 text-sm text-slate-500">
-                    z 10 bodov
-                  </p>
-                </div>
+    <p className="mt-1 text-sm text-slate-500">
+      z 10 bodov
+    </p>
+  </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                  <p className="text-sm font-medium text-slate-500">
-                    Výsledná úroveň
-                  </p>
+  <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <p className="text-sm font-medium text-slate-500">
+      Výsledná úroveň
+    </p>
 
-                  <p className="mt-2 text-xl font-bold text-slate-900">
-                    {resultLevel.title}
-                  </p>
-                </div>
+    <p className="mt-2 text-xl font-bold text-slate-900">
+      {resultLevel.title}
+    </p>
+  </div>
 
-                <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                  <p className="text-sm font-medium text-slate-500">
-                    Počet hodnotených oblastí
-                  </p>
+  <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+    <p className="text-sm font-medium text-slate-500">
+      Počet hodnotených oblastí
+    </p>
 
-                  <p className="mt-2 text-3xl font-bold text-slate-900">
-                    {demoQuestions.length}
-                  </p>
-                </div>
-              </div>
+    <p className="mt-2 text-3xl font-bold text-slate-900">
+      {demoQuestions.length}
+    </p>
+  </div>
+</div>
+
+<div className="mt-8 flex flex-col gap-4 sm:flex-row sm:justify-center">
+  <button
+    type="button"
+    onClick={() => setShowEmployeeReport(false)}
+    className="rounded-xl border-2 border-slate-300 bg-white px-8 py-4 text-lg font-semibold text-slate-700 transition hover:border-teal-500 hover:bg-teal-50 hover:text-teal-600"
+  >
+    Späť na výsledok
+  </button>
+
+  <button
+    type="button"
+    onClick={resetDemo}
+    className="rounded-xl bg-teal-500 px-8 py-4 text-lg font-semibold text-white transition hover:bg-teal-600"
+  >
+    Spustiť demo znova
+  </button>
+</div>
             </div>
           </div>
         </div>
