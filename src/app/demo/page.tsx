@@ -1161,11 +1161,11 @@ if (showSalesScreen) {
   </div>
 </div>
 
-         <div className="mt-8 grid gap-4 sm:grid-cols-[1fr_2.4fr_1fr]">
+         <div className="mt-8 grid items-stretch gap-4 sm:grid-cols-[1fr_2.4fr_1fr]">
   <button
     type="button"
     onClick={() => setShowEmployeeReport(false)}
-    className="flex min-h-28 items-center justify-center rounded-2xl border-2 border-slate-300 bg-white px-6 py-4 text-center text-lg font-semibold text-slate-700 transition hover:border-teal-500 hover:bg-teal-50 hover:text-teal-600"
+    className="flex h-32 items-center justify-center rounded-2xl border-2 border-slate-300 bg-white px-6 py-4 text-center text-lg font-semibold text-slate-700 transition hover:border-teal-500 hover:bg-teal-50 hover:text-teal-600"
   >
     Späť na výsledok
   </button>
@@ -1177,7 +1177,7 @@ if (showSalesScreen) {
       setShowDashboard(false);
       setShowSalesScreen(true);
     }}
-    className="flex min-h-28 items-center justify-center rounded-2xl bg-gradient-to-r from-[#286aff] to-[#06b8ac] px-6 py-4 text-center text-lg font-bold text-white shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl"
+    className="flex h-32 items-center justify-center rounded-2xl bg-gradient-to-r from-[#286aff] to-[#06b8ac] px-6 py-4 text-center text-lg font-bold text-white shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl"
   >
     Chcem QualityCare 360 pre svoju organizáciu →
   </button>
@@ -1185,7 +1185,7 @@ if (showSalesScreen) {
   <button
     type="button"
     onClick={resetDemo}
-    className="flex min-h-28 items-center justify-center rounded-2xl bg-teal-500 px-6 py-4 text-center text-lg font-semibold text-white transition hover:bg-teal-600"
+    className="flex h-32 items-center justify-center rounded-2xl bg-teal-500 px-6 py-4 text-center text-lg font-semibold text-white transition hover:bg-teal-600"
   >
     Spustiť demo znova
   </button>
