@@ -135,6 +135,7 @@ export default function DemoPage() {
   const [validationMessage, setValidationMessage] = useState("");
   const [showManagerReport, setShowManagerReport] = useState(false);
   const [showEmployeeReport, setShowEmployeeReport] = useState(false);
+  const [showDashboard, setShowDashboard] = useState(false);
 
   const selectedDepartment = useMemo(
     () =>
@@ -323,6 +324,7 @@ export default function DemoPage() {
     setValidationMessage("");
     setShowManagerReport(false);
     setShowEmployeeReport(false);
+    setShowDashboard(false);
   }
 
   function backToEvaluationSelection() {
@@ -334,6 +336,7 @@ export default function DemoPage() {
     setValidationMessage("");
     setShowManagerReport(false);
     setShowEmployeeReport(false);
+    setShowDashboard(false);
   }
 
   function backToEmployees() {
@@ -343,6 +346,7 @@ export default function DemoPage() {
     setValidationMessage("");
     setShowManagerReport(false);
     setShowEmployeeReport(false);
+    setShowDashboard(false);
   }
 
   if (showEmployeeReport) {
@@ -350,12 +354,16 @@ export default function DemoPage() {
       <main className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6">
         <div className="mx-auto max-w-4xl">
           <button
-            type="button"
-            onClick={() => setShowEmployeeReport(false)}
-            className="mb-6 inline-flex items-center text-sm font-semibold text-slate-600 transition hover:text-[#06b8ac]"
-          >
-            ← Späť na výsledok hodnotenia
-          </button>
+  type="button"
+  onClick={() => {
+    setShowEmployeeReport(false);
+    setShowDashboard(true);
+  }}
+  className="mb-6 inline-flex items-center text-sm font-semibold text-slate-600 transition hover:text-[#06b8ac]"
+>
+  ← Späť na pracovnú plochu
+  
+</button>
 
           <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl">
             <div className="bg-gradient-to-r from-[#286aff] to-[#06b8ac] px-6 py-8 text-white sm:px-10">
@@ -455,7 +463,159 @@ export default function DemoPage() {
       </main>
     );
   }
+if (showDashboard) {
+  return (
+    <main className="min-h-screen bg-slate-100">
+      <header className="border-b border-slate-200 bg-white">
+        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-wide text-teal-600">
+              QualityCare 360
+            </p>
 
+            <h1 className="mt-1 text-2xl font-bold text-slate-900">
+              Manažérsky dashboard
+            </h1>
+
+            <p className="mt-1 text-sm text-slate-500">
+              Názov Vašej organizácie
+            </p>
+          </div>
+
+          <div className="flex flex-col items-start gap-2 sm:items-end">
+            <span className="inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-sm font-semibold text-emerald-700">
+              Ukážkové prostredie
+            </span>
+
+            <p className="text-sm text-slate-500">
+              Hodnotiace obdobie: obdobie XY
+            </p>
+          </div>
+        </div>
+      </header>
+
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+  <div className="rounded-3xl bg-white p-6 shadow-sm">
+    <p className="text-sm text-slate-500">
+      Zamestnanci
+    </p>
+
+    <p className="mt-3 text-4xl font-bold text-slate-900">
+      24
+    </p>
+
+    <p className="mt-2 text-sm text-emerald-600">
+      +3 oproti minulému obdobiu
+    </p>
+  </div>
+
+  <div className="rounded-3xl bg-white p-6 shadow-sm">
+    <p className="text-sm text-slate-500">
+      Dokončené hodnotenia
+    </p>
+
+    <p className="mt-3 text-4xl font-bold text-slate-900">
+      186
+    </p>
+
+    <p className="mt-2 text-sm text-slate-600">
+      89 % splnené
+    </p>
+  </div>
+
+  <div className="rounded-3xl bg-white p-6 shadow-sm">
+    <p className="text-sm text-slate-500">
+      Priemerné skóre
+    </p>
+
+    <p className="mt-3 text-4xl font-bold text-teal-600">
+      8,4
+    </p>
+
+    <p className="mt-2 text-sm text-slate-600">
+      Dobrá úroveň
+    </p>
+  </div>
+
+  <div className="rounded-3xl bg-white p-6 shadow-sm">
+    <p className="text-sm text-slate-500">
+      Hodnotiace obdobie
+    </p>
+
+    <p className="mt-3 text-2xl font-bold text-slate-900">
+      Aktívne
+    </p>
+
+    <p className="mt-2 text-sm text-emerald-600">
+  Aktuálne hodnotiace obdobie
+    </p>
+  </div>
+</div>
+
+<div className="mt-8 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+  <div>
+    <p className="text-sm font-semibold uppercase tracking-wide text-teal-600">
+      Rýchle akcie
+    </p>
+
+    <h2 className="mt-2 text-2xl font-bold text-slate-900">
+      Otvorte ukážku výsledkov
+    </h2>
+
+    <p className="mt-2 text-sm leading-6 text-slate-600">
+      Prezrite si, ako QualityCare 360 spracuje hodnotenia do prehľadných
+      výstupov.
+    </p>
+  </div>
+
+  <div className="mt-6 grid gap-4 md:grid-cols-2">
+    <button
+      type="button"
+      onClick={() => {
+        setShowDashboard(false);
+        setShowManagerReport(true);
+      }}
+      className="rounded-2xl border-2 border-teal-200 bg-teal-50 p-6 text-left transition hover:border-teal-500 hover:bg-teal-100"
+    >
+      <span className="block text-xl font-bold text-slate-900">
+        Manažérsky report
+      </span>
+
+      <span className="mt-2 block text-sm leading-6 text-slate-600">
+        Súhrnné výsledky, benchmark úsekov a odporúčania pre vedenie.
+      </span>
+
+      <span className="mt-4 block text-sm font-semibold text-teal-700">
+        Otvoriť report →
+      </span>
+    </button>
+
+    <button
+      type="button"
+      onClick={() => {
+        setShowDashboard(false);
+        setShowEmployeeReport(true);
+      }}
+      className="rounded-2xl border border-slate-200 bg-white p-6 text-left transition hover:border-teal-500 hover:bg-teal-50"
+    >
+      <span className="block text-xl font-bold text-slate-900">
+        Report zamestnanca
+      </span>
+
+      <span className="mt-2 block text-sm leading-6 text-slate-600">
+        Individuálny výstup s výsledkom a hlavnými rozvojovými oblasťami.
+      </span>
+
+      <span className="mt-4 block text-sm font-semibold text-teal-700">
+        Otvoriť report →
+      </span>
+    </button>
+  </div>
+</div>
+
+    </main>
+  );
+}
   if (showManagerReport) {
     return (
       <main className="min-h-screen bg-slate-50 px-4 py-10">
@@ -476,12 +636,15 @@ export default function DemoPage() {
             </div>
 
             <button
-              type="button"
-              onClick={() => setShowManagerReport(false)}
-              className="rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
-            >
-              Späť na výsledok
-            </button>
+  type="button"
+  onClick={() => {
+    setShowManagerReport(false);
+    setShowDashboard(true);
+  }}
+  className="rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+>
+  Späť na pracovnú plochu
+</button>
           </div>
 
           <div className="grid gap-6 lg:grid-cols-3">
@@ -802,12 +965,12 @@ export default function DemoPage() {
           )}
 
           <button
-            type="button"
-            onClick={() => setShowManagerReport(true)}
-            className="mb-4 w-full rounded-xl border-2 border-teal-500 bg-white px-8 py-4 text-lg font-semibold text-teal-600 transition hover:bg-teal-50"
-          >
-            Zobraziť ukážku manažérskeho reportu →
-          </button>
+  type="button"
+  onClick={() => setShowDashboard(true)}
+  className="mb-4 w-full rounded-xl bg-teal-500 px-8 py-4 text-lg font-semibold text-white transition hover:bg-teal-600"
+>
+  Prejsť do manažérskeho dashboardu →
+</button>
 
           <button
             type="button"
