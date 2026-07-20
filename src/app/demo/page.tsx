@@ -238,6 +238,53 @@ const developmentArea = useMemo(() => {
     score,
   };
 }, [answers]);
+const managerComment = useMemo(() => {
+  const strongestName = strongestArea?.question ?? "najsilnejšie oblasti";
+  const developmentName =
+    developmentArea?.question ?? "oblasti s priestorom na zlepšenie";
+
+  if (averageScore >= 8.5) {
+    return {
+      title: "Výborná úroveň",
+      paragraphs: [
+        `Výsledky hodnotenia poukazujú na veľmi vysokú a stabilnú úroveň pracovného výkonu. Mimoriadne pozitívne bola hodnotená oblasť „${strongestName}“, ktorá predstavuje významnú silnú stránku hodnoteného zamestnanca.`,
+        `Aj napriek výbornému výsledku odporúčame priebežne sledovať oblasť „${developmentName}“ a podporovať ďalší odborný rozvoj. Cieľom by malo byť najmä udržanie dosiahnutej úrovne a zdieľanie príkladov dobrej praxe v tíme.`,
+        "Výsledky neindikujú závažné nedostatky. Odporúča sa pokračovať v pravidelnom hodnotení, aby bolo možné sledovať dlhodobý vývoj a udržateľnosť kvality výkonu.",
+      ],
+    };
+  }
+
+  if (averageScore >= 7) {
+    return {
+      title: "Dobrá úroveň",
+      paragraphs: [
+        `Výsledky hodnotenia naznačujú dobrú a stabilnú úroveň pracovného výkonu. Najlepšie bola hodnotená oblasť „${strongestName}“, ktorá predstavuje pevný základ pre kvalitné plnenie pracovných úloh.`,
+        `Priestor na ďalší rozvoj bol identifikovaný najmä v oblasti „${developmentName}“. Odporúča sa zamerať na konkrétne opatrenia, odborné usmernenie alebo cielené vzdelávanie podľa charakteru tejto oblasti.`,
+        "Celkové výsledky neindikujú závažné systémové nedostatky. Pravidelné opakovanie hodnotenia umožní sledovať vývoj a objektívne posúdiť účinnosť prijatých opatrení.",
+      ],
+    };
+  }
+
+  if (averageScore >= 5) {
+    return {
+      title: "Oblasť na sledovanie",
+      paragraphs: [
+        `Výsledky hodnotenia poukazujú na nerovnomernú úroveň pracovného výkonu. Pozitívne bola hodnotená oblasť „${strongestName}“, na ktorej je možné ďalej stavať.`,
+        `Zvýšenú pozornosť je potrebné venovať oblasti „${developmentName}“. Odporúča sa určiť konkrétne očakávania, termíny zlepšenia a spôsob priebežného overovania dosiahnutého pokroku.`,
+        "Vhodné je pripraviť krátky rozvojový plán a hodnotenie po primeranom období zopakovať. Cieľom je overiť, či prijaté opatrenia priniesli merateľné zlepšenie.",
+      ],
+    };
+  }
+
+  return {
+    title: "Riziková oblasť",
+    paragraphs: [
+      `Výsledky hodnotenia poukazujú na potrebu zvýšenej manažérskej pozornosti. Za relatívne najsilnejšiu možno považovať oblasť „${strongestName}“, celkový výsledok však zostáva pod požadovanou úrovňou.`,
+      `Najvýraznejší priestor na zlepšenie bol identifikovaný v oblasti „${developmentName}“. Odporúča sa bezodkladne stanoviť konkrétne nápravné opatrenia, zodpovednosť a termíny ich splnenia.`,
+      "Súčasťou ďalšieho postupu by mal byť individuálny akčný plán, priebežná kontrola a opakované hodnotenie po dohodnutom období.",
+    ],
+  };
+}, [averageScore, strongestArea, developmentArea]);
   function selectAnswer(questionIndex: number, value: number) {
     setAnswers((currentAnswers) => ({
       ...currentAnswers,
@@ -500,6 +547,30 @@ if (showManagerReport) {
             </div>
           </div>
         </div>
+
+<div className="mt-8 rounded-3xl border border-slate-200 bg-white p-8 shadow-lg">
+  <div className="mb-6 flex items-center gap-3">
+    <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-teal-100 text-2xl">
+      💡
+    </div>
+
+    <div>
+      <p className="text-sm font-semibold uppercase tracking-wide text-teal-600">
+        Automatický manažérsky komentár
+      </p>
+
+      <h2 className="text-2xl font-bold text-slate-900">
+        {managerComment.title}
+      </h2>
+    </div>
+  </div>
+
+  <div className="space-y-5 leading-8 text-slate-700">
+    {managerComment.paragraphs.map((paragraph) => (
+      <p key={paragraph}>{paragraph}</p>
+    ))}
+  </div>
+</div>
 
         <div className="mt-8 text-center">
           <button
